@@ -40,25 +40,7 @@ test: test/core_gameplay_test.c build/core_gameplay.o
 
 
 
-
-
-
-
-
-
-
-
-# Build server executable
-$(SERVER): $(OBJS) $(wildcard $(INCLUDE)/*.h)
-	@mkdir -p $(BIN)
-	$(CC) $(OBJS) -o $(SERVER)
-
-# Compile source files (include header files in dependencies)
-$(BUILD)/%.o: $(SERVER_SRC)/%.c $(SERVER_HEADERS)
-	@mkdir -p $(BUILD)
-	$(CC) $(CFLAGS) -c $< -o $@
-
 # Clean build files
 clean:
-	rm -rf $(BUILD)/*.o $(SERVER)
+	rm -rf build/*.o server/*.exe
 
