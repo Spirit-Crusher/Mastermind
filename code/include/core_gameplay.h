@@ -4,6 +4,7 @@
 /****************** Includes *******************/
 #include <stdio.h>
 #include <time.h>
+#include <stdbool.h>
 
 /****************** Defines *******************/
 #define MAX_SEQUENCE_SIZE 8
