@@ -1,0 +1,42 @@
+# Compiler
+CC = gcc
+
+# Directories
+SERVER_SRC := servidor
+BIN := bin
+TEST := tests
+BUILD := build
+INCLUDE := include
+# Header files
+SERVER_HEADERS = $(wildcard $(SERVER_SRC)/*.h) 
+
+# Source and output files
+SERVER_SRCS = $(wildcard $(SERVER_SRC)/*.c)
+OBJS = $(patsubst $(SERVER_SRC)/%.c, $(BUILD)/%.o, $(SERVER_SRCS))
+
+# Server Output executable
+SERVER = $(BIN)/server.exe
+
+# Compilation flags
+CFLAGS = -Wall -Wextra -std=c11
+
+# Default TARGET
+all: $(SERVER)
+
+# Build server executable
+$(SERVER): $(OBJS) $(wildcard $(INCLUDE)/*.h)
+	@mkdir -p $(BIN)
+	$(CC) $(OBJS) -o $(SERVER)
+
+# Compile source files (include header files in dependencies)
+$(BUILD)/%.o: $(SERVER_SRC)/%.c $(SERVER_HEADERS)
+	@mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Clean build files
+clean:
+	rm -rf $(BUILD)/*.o $(SERVER)
+
+# Run the program
+run: all
+	$(SERVER)

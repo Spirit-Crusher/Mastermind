@@ -8,7 +8,7 @@
 /****************** Defines *******************/
 #define NJMAX 4                    /* número máximo de jogadores em simultâneo */
 #define TOPN 10                    /* número de registos em cada tabela de nível */
-#define MAXNJ 10                   /* valor inicial do número máximo de jogadas (tentativas) */
+#define MAXNJ 10                  /* valor inicial do número máximo de jogadas (tentativas) */
 #define MAXT 5                     /* valor inicial do tempo máximo de jogo (minutos) */
 #define JMMLOG "JOGOS.LOG"         /* ficheiro com registo histórico */
 #define JMMSERVSD "/tmp/JMMSERVSD" /* nome do servidor de jogo (socket datagram) */
