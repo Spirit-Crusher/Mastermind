@@ -21,7 +21,7 @@ extern void cmd_test (int, char** );
 | Variable and constants definition
 +--------------------------------------------------------------------------*/ 
 const char TitleMsg[] = "\n Application Control Monitor\n";
-const char InvalMsg[] = "\nInvalid command!";
+const char InvalMsg[] = "\n Invalid command!";
 
 struct 	command_d {
   void  (*cmd_fnct)(int, char**);
