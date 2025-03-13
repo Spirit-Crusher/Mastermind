@@ -13,9 +13,22 @@
 /*-------------------------------------------------------------------------+
 | Headers of command functions
 +--------------------------------------------------------------------------*/ 
+
+       void cmd_sos  (int, char** );
 extern void cmd_sair (int, char** );
 extern void cmd_test (int, char** );
-       void cmd_sos  (int, char** );
+extern void cmd_cnj  (int, char**);
+extern void cmd_jg   (int, char**);
+extern void cmd_clm  (int, char**);
+extern void cmd_mlm  (int, char**);
+extern void cmd_cer  (int, char**);
+extern void cmd_aer  (int, char**);
+extern void cmd_der  (int, char**);
+extern void cmd_tmm  (int, char**);
+extern void cmd_ltc  (int, char**);
+extern void cmd_rtc  (int, char**);
+extern void cmd_trh  (int, char**);
+
 
 /*-------------------------------------------------------------------------+
 | Variable and constants definition
@@ -27,10 +40,23 @@ struct 	command_d {
   void  (*cmd_fnct)(int, char**);
   char*	cmd_name;
   char*	cmd_help;
-} const commands[] = {
+} 
+
+const commands[] = {
   {cmd_sos,  "sos","                  help"},
   {cmd_sair, "sair","                 sair"},
-  {cmd_test, "teste","<arg1> <arg2>   comando de teste"}
+  {cmd_test, "teste","<arg1> <arg2>   comando de teste"},
+  {cmd_cnj, "cnj", "<N> <n>           começar novo jogo (Nome (3 chars) e nível de dificuldade (1/2))"},
+  {cmd_jg, "jg", "mplay               jogada (3 ou 5 letras, dependendo do nível"},
+  {cmd_clm, "clm","                   consultar limites (número máximo de jogadas, tempo limite)"},
+  {cmd_mlm, "mlm","<j> <t>            mudar limites (número máximo de jogadas, tempo limite (minutos))"},
+  {cmd_cer, "cer","                   consultar estado envio de registos para histórico"},
+  {cmd_aer, "aer","                   activar envio de registos para histórico"},
+  {cmd_der, "der","                   desactivar envio de registos para histórico"},
+  {cmd_tmm, "tmm","                   terminar processo master mind (JMMserv)"},
+  {cmd_ltc, "tmm","<n>                listar tabela(s) classificação nível n (0-todos)"},
+  {cmd_rtc, "tmm","<n>                reinicializar tabela(s) classificação nível n (0-todos)"},
+  {cmd_trh, "tmm","                   terminar processo de registo histórico (JMMlog)"}  
 };
 
 #define NCOMMANDS  (sizeof(commands)/sizeof(struct command_d))
@@ -52,8 +78,7 @@ void cmd_sos (int argc, char **argv)
 /*-------------------------------------------------------------------------+
 | Function: my_getline        (called from monitor) 
 +--------------------------------------------------------------------------*/ 
-int my_getline (char** argv, int argvsize)
-{
+int my_getline (char** argv, int argvsize){
   static char line[MAX_LINE];
   char *p;
   int argc;

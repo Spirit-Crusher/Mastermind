@@ -18,12 +18,12 @@ void cmd_sair (int argc, char **argv)
 /*-------------------------------------------------------------------------+
 | Function: cmd_test - apenas como exemplo
 +--------------------------------------------------------------------------*/ 
-void cmd_test (int argc, char** argv)
-{
+void cmd_test (int argc, char** argv){
   int i;
 
   /* exemplo -- escreve argumentos */
-  for (i=0; i<argc; i++)
+  for (i = 0; i < argc; i++)
     printf ("\nargv[%d] = %s", i, argv[i]);
+
 }
 
