@@ -6,9 +6,11 @@
 #include <time.h>
 #include <stdbool.h>
 #include "mastermind.h"
+#include <string.h>
 
 /****************** Defines *******************/
 #define MAX_SEQUENCE_SIZE 8
+#define NO_TIME_REGISTERED -1
 
 /****************** Structs *******************/
 typedef enum

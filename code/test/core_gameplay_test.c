@@ -17,7 +17,6 @@ void analise_move_test(){
     printf("\nNp = %i      Nb = %i\n", game.np, game.nb);
 }
 
-
 int main(){
     analise_move_test();
     return 0;
