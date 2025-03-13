@@ -7,7 +7,6 @@
 
 /****************** Defines *******************/
 #define NJMAX 4                    /* número máximo de jogadores em simultâneo */
-#define TOPN 10                    /* número de registos em cada tabela de nível */
 #define MAXNJ 10                  /* valor inicial do número máximo de jogadas (tentativas) */
 #define MAXT 5                     /* valor inicial do tempo máximo de jogo (minutos) */
 #define JMMLOG "JOGOS.LOG"         /* ficheiro com registo histórico */
@@ -18,7 +17,14 @@
 
 
 /****************** Structs *******************/
-
+typedef struct
+{               /* estrutura de um registo de jogo */
+    int nd;     /* nível de dificuldade do jogo */
+    char nj[4]; /* nome do jogador (3 caracteres) */
+    int nt;     /* número de tentativas usadas */
+    time_t ti;  /* estampilha temporal início do jogo */
+    time_t tf;  /* estampilha temporal fim do jogo */
+} rjg_t;
 
 
 
