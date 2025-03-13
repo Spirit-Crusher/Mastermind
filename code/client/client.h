@@ -7,5 +7,4 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#define CM_MAX_LEN 5
-
+#define BUFDIM 8
