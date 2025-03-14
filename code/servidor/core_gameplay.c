@@ -1,24 +1,31 @@
 #include "core_gameplay.h"
 
-//esta será a thread que espera novos jogos (tenho de criar comunição com clientes) COLOCAR NO SERVIDOR.C
+//COLOCAR NO SERVIDOR.C
 #define SERVERNAME "/tmp/GAME_SERVER"
 #define MSG "SERVER IS ALIVE AND WELL"
 
+//esta função está uma macacada enorme, vou ter de passar isto para várias funções
 void wait_for_games()
 {
-    int sd; //socket descriptor do servidor
+    int sd_stream; //socket descriptor do servidor para stream
+    int sd_datagram; //socket descriptor do servidor para datagrama
     int s; //client specific socket descriptor
-    int sd, new_sock, max_sd, activity, i;
+    int new_sock, max_sd, request_made, i;
     struct sockaddr_un server_addr;
     socklen_t server_addrlen;
     struct sockaddr_un client_addr;
-    socklen_t client_addrlen; //não será igual ao server_addrlen?
+    socklen_t client_addrlen; //não será igual ao server_addrlen? (acho que posso eliminar esta variável e passar o server_addrlen para addrlen)
     char buffer[100];
     fd_set rfds; //set dos descriptors das sockets
     int client_sockets_fd[NJMAX] = {0}; //array com socket descriptors de todos os clientes
 
-    //criação da socket do servidor
-    if((sd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0 ) 
+    //criação das sockets do servidor
+    if((sd_stream = socket(AF_UNIX, SOCK_STREAM, 0)) < 0 ) 
+    {
+        perror("Erro a criar socket"); 
+        exit(-1);
+    }
+    if((sd_stream = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0 ) 
     {
         perror("Erro a criar socket"); 
         exit(-1);
@@ -32,15 +39,21 @@ void wait_for_games()
 
     unlink(SERVERNAME); //remover ficheiro socket caso este já tenha sido criado previamente
 
-    //ligar server à socket (bind)
-    if(bind(sd, (struct sockaddr *) &server_addr, server_addrlen) < 0 ) 
+    //ligar server às socket (bind)
+    if(bind(sd_stream, (struct sockaddr *) &server_addr, server_addrlen) < 0 ) 
+    {
+        perror("Erro no bind"); 
+        exit(-1);
+    }
+    if(bind(sd_datagram, (struct sockaddr *) &server_addr, server_addrlen) < 0 ) 
     {
         perror("Erro no bind"); 
         exit(-1);
     }
 
+
     //socket vai ficar a ouvir requests para conectar e aceitará apenas um máximo de NJMAX clientes
-    if(listen(sd, NJMAX) < 0 ) 
+    if(listen(sd_stream, NJMAX) < 0 ) 
     {
         perror("Erro no listen"); 
         exit(-1);
@@ -48,12 +61,13 @@ void wait_for_games()
 
     printf("À espera de receber conexões dos clientes...\n");
 
-    //receber datagramas
+    //receber mensagens dos clientes
     while(true)
     {
         FD_ZERO(&rfds); //limpar set
-        FD_SET(sd, &rfds); //adicionar socket que está listening ao set (para select conseguir ver se temos novos clientes)
-        max_sd = sd; //temos de guardar esta informação (estava na man page, não sei qual é o propósito)
+        FD_SET(sd_stream, &rfds); //adicionar socket que está listening ao set (para select conseguir ver se temos novos clientes)
+        FD_SET(sd_datagram, &rfds);
+        max_sd = (sd_stream > sd_datagram) ? sd_stream : sd_datagram; //temos de guardar esta informação (estava na man page, não sei qual é o propósito)
 
         //adicionar sockets dos clientes ao set
         for(i = 0; i < NJMAX; ++i) 
@@ -65,17 +79,17 @@ void wait_for_games()
             }
         }
 
-        //esperar por atividade de qualquer um dos clientes (bloqueia)
-        if((activity = select(max_sd + 1, &rfds, NULL, NULL, NULL)) < 0 && errno != EINTR)
+        //esperar por pedido de conexão (bloqueia)
+        if((request_made = select(max_sd + 1, &rfds, NULL, NULL, NULL)) < 0 /*&& errno != EINTR*/)
         {
             perror("Erro no select");
         }
 
-        //há atividade, vamos aceitar conexão
-        if(FD_ISSET(sd, &rfds)) 
+        //existem pedidos, vamos aceitar conexão
+        if(FD_ISSET(sd_stream, &rfds)) 
         {
             client_addrlen = sizeof(client_addr);
-            if((new_sock = accept(sd, (struct sockaddr *)&client_addr, &client_addrlen)) < 0) 
+            if((new_sock = accept(sd_stream, (struct sockaddr *)&client_addr, &client_addrlen)) < 0) 
             {
                 perror("Erro no accept");
                 exit(-1);
@@ -95,7 +109,7 @@ void wait_for_games()
             }
         }
 
-        //ler datagramas dos clientes
+        //ler stream dos clientes
         for(i = 0; i < NJMAX; ++i)
         {
             s = client_sockets_fd[i]; //atualizar o cliente que estamos a ler
@@ -109,7 +123,7 @@ void wait_for_games()
             }
             else 
             {
-                printf("SERVER: Recebi: %s\n", buffer); //mostrar o que foi recebido
+                printf("SERVER: Recebi \"%s\" do cliente com sd \"%d\"\n", buffer, s); //mostrar o que foi recebido
                 
                 //enviar algo para o cliente
                 if(write(s, MSG, strlen(MSG)+1) < 0)    
@@ -118,10 +132,30 @@ void wait_for_games()
                 }
             }
         }
+
+        //ATENÇÃO QUE BUFFER É PARTILHADO ENTRE DATAGRAMAS E STREAMS
+
+        //ler datagramas dos clientes
+        if(recvfrom(sd_datagram, buffer, sizeof(buffer), 0, (struct sockaddr *) &client_addr, &client_addrlen) < 0)
+        {
+            perror("Erro no recvfrom");
+        }
+        else
+        {
+            printf("SERVER: Recebi\"%s\" do cliente \"%s\" \n", buffer, client_addr.sun_path); //mostrar o que foi recebido
+                
+            //enviar algo para o cliente
+            if(sendto(sd_datagram, MSG, strlen(MSG)+1, 0, (struct sockaddr*) &client_addr, &client_addrlen) < 0)
+            {
+                perror("Erro no sendto");
+            }
+        }
+        
     }
     
     //NAO ESQUECER DE FECHAR SOCKET E DAR UNLINK
-    close(sd);
+    close(sd_stream);
+    close(sd_datagram);
     /*close(s);*/ //aqui já não é ncessário fazer porque fizemos no loop sempre que cliente se disconecta
     unlink(SERVERNAME);
 }
