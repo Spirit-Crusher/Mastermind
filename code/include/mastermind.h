@@ -4,6 +4,14 @@
 /****************** Includes *******************/
 #include <stdio.h>
 #include <time.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <string.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <stdbool.h>
 
 /****************** Defines *******************/
 #define NJMAX 4                    /* número máximo de jogadores em simultâneo */

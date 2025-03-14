@@ -1,12 +1,56 @@
 #include "core_gameplay.h"
 
-// Esta será a thread que espera novos jogos (tenho de criar comunição com clientes)
+//esta será a thread que espera novos jogos (tenho de criar comunição com clientes) COLOCAR NO SERVIDOR.C
+#define SERVERNAME "/tmp/GAME_SERVER"
 void wait_for_games()
 {
+    int sd; //socket descriptor
+    struct sockaddr_un server_addr;
+    socklen_t server_addrlen;
+    struct sockaddr_un client_addr;
+    socklen_t client_addrlen;
+    char buffer[100];
+
+    //criação da socket
+    if ((sd = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0 ) 
+    {
+        perror("Erro a criar socket"); 
+        exit(-1);
+    }
+
+    //inicialização da estrutura para associar (bind) server à socket
+    server_addr.sun_family = AF_UNIX;
+    memset(server_addr.sun_path, 0, sizeof(server_addr.sun_path)); //tenho de inicializar desta maneira? Não posso só fazer strcpy diretamente?
+    strcpy(server_addr.sun_path, SERVERNAME);   //definir path para a socket (vai ficar no /tmp)
+    server_addrlen = sizeof(server_addr.sun_family) + strlen(server_addr.sun_path);
+
+    //ligar server à socket (bind)
+    if (bind(sd, (struct sockaddr *) &server_addr, server_addrlen) < 0 ) 
+    {
+        perror("Erro no bind"); 
+        exit(-1);
+    }
+
+    //receber datagramas
+    while (true)
+    {
+        client_addrlen = sizeof(client_addr);
+        if (recvfrom(sd, buffer, sizeof(buffer), 0, (struct sockaddr *) & client_addr, &client_addrlen) < 0) 
+        {
+            perror("Erro no recvfrom");
+        }
+        else 
+        {
+            printf("SERV: Recebi: %s\n", buffer); //mostrar o que foi recebido
+            //enviar algo para o cliente
+            //if (sendto(sd, MSG, strlen(MSG)+1, 0, (struct sockaddr *)&client_addr, client_addrlen) < 0) perror("Erro no sendto");
+        }
+    }
     
+    //NAO ESQUECER DE FECHAR SOCKET E DAR UNBIND
 }
 
-// Esta é chamada depois da thread aceitar um novo jogo
+//esta é chamada depois da thread aceitar um novo jogo
 game_t create_new_game(char* player_name, int dificulty)
 {
     game_t game = { .correct_sequence = "AAAA", 
