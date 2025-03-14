@@ -2,17 +2,23 @@
 
 //esta será a thread que espera novos jogos (tenho de criar comunição com clientes) COLOCAR NO SERVIDOR.C
 #define SERVERNAME "/tmp/GAME_SERVER"
+#define MSG "SERVER IS ALIVE AND WELL"
+
 void wait_for_games()
 {
-    int sd; //socket descriptor
+    int sd; //socket descriptor do servidor
+    int s; //client specific socket descriptor
+    int sd, new_sock, max_sd, activity, i;
     struct sockaddr_un server_addr;
     socklen_t server_addrlen;
     struct sockaddr_un client_addr;
-    socklen_t client_addrlen;
+    socklen_t client_addrlen; //não será igual ao server_addrlen?
     char buffer[100];
+    fd_set rfds; //set dos descriptors das sockets
+    int client_sockets_fd[NJMAX] = {0}; //array com socket descriptors de todos os clientes
 
-    //criação da socket
-    if ((sd = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0 ) 
+    //criação da socket do servidor
+    if((sd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0 ) 
     {
         perror("Erro a criar socket"); 
         exit(-1);
@@ -24,33 +30,108 @@ void wait_for_games()
     strcpy(server_addr.sun_path, SERVERNAME);   //definir path para a socket (vai ficar no /tmp)
     server_addrlen = sizeof(server_addr.sun_family) + strlen(server_addr.sun_path);
 
+    unlink(SERVERNAME); //remover ficheiro socket caso este já tenha sido criado previamente
+
     //ligar server à socket (bind)
-    if (bind(sd, (struct sockaddr *) &server_addr, server_addrlen) < 0 ) 
+    if(bind(sd, (struct sockaddr *) &server_addr, server_addrlen) < 0 ) 
     {
         perror("Erro no bind"); 
         exit(-1);
     }
 
-    //receber datagramas
-    while (true)
+    //socket vai ficar a ouvir requests para conectar e aceitará apenas um máximo de NJMAX clientes
+    if(listen(sd, NJMAX) < 0 ) 
     {
-        client_addrlen = sizeof(client_addr);
-        if (recvfrom(sd, buffer, sizeof(buffer), 0, (struct sockaddr *) & client_addr, &client_addrlen) < 0) 
+        perror("Erro no listen"); 
+        exit(-1);
+    }
+
+    printf("À espera de receber conexões dos clientes...\n");
+
+    //receber datagramas
+    while(true)
+    {
+        FD_ZERO(&rfds); //limpar set
+        FD_SET(sd, &rfds); //adicionar socket que está listening ao set (para select conseguir ver se temos novos clientes)
+        max_sd = sd; //temos de guardar esta informação (estava na man page, não sei qual é o propósito)
+
+        //adicionar sockets dos clientes ao set
+        for(i = 0; i < NJMAX; ++i) 
         {
-            perror("Erro no recvfrom");
+            if(client_sockets_fd[i] > 0) //adicionar ao set se file descriptor existe (>0)
+            {
+                FD_SET(client_sockets_fd[i], &rfds);
+                if(client_sockets_fd[i] > max_sd) max_sd = client_sockets_fd[i]; //atualizar qual é o sd mais recente (valor maior)
+            }
         }
-        else 
+
+        //esperar por atividade de qualquer um dos clientes (bloqueia)
+        if((activity = select(max_sd + 1, &rfds, NULL, NULL, NULL)) < 0 && errno != EINTR)
         {
-            printf("SERV: Recebi: %s\n", buffer); //mostrar o que foi recebido
-            //enviar algo para o cliente
-            //if (sendto(sd, MSG, strlen(MSG)+1, 0, (struct sockaddr *)&client_addr, client_addrlen) < 0) perror("Erro no sendto");
+            perror("Erro no select");
+        }
+
+        //há atividade, vamos aceitar conexão
+        if(FD_ISSET(sd, &rfds)) 
+        {
+            client_addrlen = sizeof(client_addr);
+            if((new_sock = accept(sd, (struct sockaddr *)&client_addr, &client_addrlen)) < 0) 
+            {
+                perror("Erro no accept");
+                exit(-1);
+            }
+
+            printf("Novo cliente conectado\n");
+
+            // Adicionar o novo cliente ao array de sockets
+            for(i = 0; i < NJMAX; ++i) 
+            {
+                if(client_sockets_fd[i] == 0) //procurar "espaço vazio" no array
+                {
+                    client_sockets_fd[i] = new_sock;
+                    printf("Socket guardada no indice: %d\n", i);
+                    break; //se já encontrei não vale a pena continuar a iterar
+                }
+            }
+        }
+
+        //ler datagramas dos clientes
+        for(i = 0; i < NJMAX; ++i)
+        {
+            s = client_sockets_fd[i]; //atualizar o cliente que estamos a ler
+
+            //ler mensagem do cliente
+            if(read(s, buffer, sizeof(buffer)) <= 0) 
+            {
+                perror("Cliente desconectou-se");
+                close(s);
+                client_sockets_fd[i] = 0;
+            }
+            else 
+            {
+                printf("SERVER: Recebi: %s\n", buffer); //mostrar o que foi recebido
+                
+                //enviar algo para o cliente
+                if(write(s, MSG, strlen(MSG)+1) < 0)    
+                {
+                    perror("Erro no write");
+                }
+            }
         }
     }
     
-    //NAO ESQUECER DE FECHAR SOCKET E DAR UNBIND
+    //NAO ESQUECER DE FECHAR SOCKET E DAR UNLINK
+    close(sd);
+    /*close(s);*/ //aqui já não é ncessário fazer porque fizemos no loop sempre que cliente se disconecta
+    unlink(SERVERNAME);
 }
 
-//esta é chamada depois da thread aceitar um novo jogo
+void run_the_game()
+{
+
+}
+
+//inicialização do jogo
 game_t create_new_game(char* player_name, int dificulty)
 {
     game_t game = { .correct_sequence = "AAAA", 
@@ -69,7 +150,7 @@ game_t create_new_game(char* player_name, int dificulty)
     
     strcpy(&game.log.nj, player_name); //inicializa o nome do jogador
 
-
+    return game;
 }
 
 game_state_t analise_move(game_t *game_pt)
@@ -83,7 +164,7 @@ game_state_t analise_move(game_t *game_pt)
     game_pt->log.nt++;
 
     // procurar por letras certas no sítio certo
-    for (int i = 0; i < game_pt->n_char; i++)
+    for (int i = 0; i < game_pt->n_char; ++i)
     {
         if (game_pt->correct_sequence[i] == game_pt->player_move[i])
         {
@@ -94,7 +175,7 @@ game_state_t analise_move(game_t *game_pt)
     }
 
     // procurar por letras certas no sítio errado
-    for (int i = 0; i < game_pt->n_char; i++)
+    for (int i = 0; i < game_pt->n_char; ++i)
     {
         if (!used_guess[i])
         { // se esta posição não teve uma ligação direta
