@@ -10,7 +10,7 @@
 /****************** Defines *******************/
 #define MAX_SEQUENCE_SIZE 8
 
-/****************** Structs *******************/
+/****************** Enums *******************/
 typedef enum
 {
     ONGOING,
@@ -18,7 +18,7 @@ typedef enum
     PLAYER_LOST,
 } game_state_t;
 
-
+/****************** Structs *******************/
 
 typedef struct // variável de estado do jogo
 {

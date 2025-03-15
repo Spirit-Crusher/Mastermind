@@ -15,6 +15,13 @@
 #define JMMLOGSD "/tmp/JMMLOGS"    /* nome do registo histórico (socket datagram) */
 #define JMMLOGQ "/JMMLOGQ"         /* nome do registo histórico (queue) */
 
+/****************** Enums *******************/
+typedef enum
+{
+    DIFF_ALL,
+    DIFF_1,
+    DIFF_2,
+} game_diff_t;
 
 /****************** Structs *******************/
 typedef struct
