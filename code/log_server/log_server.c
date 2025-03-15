@@ -1,4 +1,5 @@
 #include "log_server.h"
+#include <unistd.h>
 
 //?? É preferivel deixar o ficheiro aberto e ir sincronizando ou ->**abrir e fechar o ficheiro várias vezes?**<-
 
@@ -11,11 +12,6 @@
 // get_tab_n()
 // del_tab_n()
 
-/***************************** add_game *******************************/
-void add_game()
-{
-
-}
 
 /***************************** global variables *******************************/
 struct mq_attr ma; //!! por local e static
@@ -27,8 +23,8 @@ void* queue_handler(void* pi)
   int mqids;
   rjg_t game_save;
 
-  int i, mfd;
-  char* tabel;
+  int mfd;
+  log_tabs_t* tabel;
 
   // open queue
   if ((mqids = mq_open(JMMLOGQ, O_RDWR | O_CREAT, 0666, &ma)) < 0) {
@@ -61,10 +57,29 @@ void* queue_handler(void* pi)
       exit(-1);
     }
 
-    /* aceder ao ficheiro através da memória */
-    for (i = 0; i < MSIZE; i++)
-      tabel[i] = 'A';
+    /* guardar o jogo na memória */
+    switch (game_save.nd)
+    {
+    case DIFF_1:
+      if (tabel->tb1_n_games == TOPN) {
+        printf("queue_handler: tabela da dificuldade 1 cheia\n");
+      }
+      tabel->tb1[tabel->tb1_n_games] = game_save; //guardar cópia
+      break;
 
+    case DIFF_2:
+      if (tabel->tb2_n_games == TOPN) {
+        printf("queue_handler: tabela da dificuldade 2 cheia\n");
+      }
+      tabel->tb2[tabel->tb2_n_games] = game_save; //guardar cópia
+      break;
+
+    default:
+      printf("queue_handler: difficuldade inválida\n");
+      break;
+    }
+
+    // fechar ficheiro
     munmap(tabel, MSIZE);
     close(mfd);
 

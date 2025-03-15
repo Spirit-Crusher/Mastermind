@@ -23,10 +23,11 @@
 #define MSIZE sizeof(log_tabs_t)    
 
 /****************** Structs *******************/
-typedef struct 
-{
+typedef struct {
     rjg_t tb1[TOPN];
+    unsigned int tb1_n_games;
     rjg_t tb2[TOPN];
+    unsigned int tb2_n_games;
 } log_tabs_t;
 
 
