@@ -36,16 +36,29 @@ typedef struct {
 /*************** Function Prototypes *****************/
 
 /* queue_handler
-* @details: takes care of the queue of oncoming data from JMMserv
+* @details: responsável pela queue de datos provenientes do JMMserv
 */
 void* queue_handler(void* pi);
 
+/* open_file
+* @return: mfd_p -> ponteiro para o file descritor do ficheiro de dados
+* @return: tabel_p -> ponteiro para o ponteiro da estrutura que contém os dados presentes no ficheiro de dados
+* @details: abre o ficheiro de dados e projeta este numa estrutura que é devolvida através do argumento tabel_p
+*/
 void open_file(int* mfd_p, log_tabs_t** tabel_p);
 
+/* get_tab_n
+* @return: single_tab -> estrutura com uma tabela de dificuldades inteira
+* @arg: diff -> dificuldade da estrutura supracitada
+* @details: devolve a tabela de jogos da dificuldade especifica em diff
+* ps: cada dificuldade tem de ser extraida individualmente, ou seja, DIFF_ALL não é válido
+*/
 void get_tab_n(log_single_tab_t* single_tab, int diff);
 
-void del_tab_n(int diff);
-
+/* del_tab_n
+* @arg: diff -> dificuldade da tabela a pagar (diff= DIF_ALL -> todas)
+* @details: faz reset das tabelas de dificuldade
+*/
 void del_tab_n(int diff);
 
 #endif

@@ -274,7 +274,7 @@ void get_tab_n(log_single_tab_t* single_tab, int diff) {
     break;
 
   default:
-    printf("get_tab_n: difficuldade inválida\n");
+    printf("get_tab_n: difficuldade inválida (nota: nesta função DIF_ALL não é suportado)\n");
     break;
   }
 }
