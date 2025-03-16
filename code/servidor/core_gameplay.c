@@ -6,28 +6,6 @@
 
 }*/
 
-//inicialização do jogo
-game_t create_new_game(char* player_name, int dificulty)
-{
-    game_t game = { .correct_sequence = "AAAA", 
-                    .log.nd = dificulty, 
-                    /*.log.nj = , para isto faço strcpy*/ 
-                    .log.nt = 0, 
-                    .log.ti = time(NULL), 
-                    .log.tf = NO_TIME_REGISTERED, //inicializei com alguma coisa para conseguir perceber se der problemas
-                    .n_char = 4, 
-                    .nt_max = 3, 
-                    .player_move = "BCAA", 
-                    .np = 0, 
-                    .nb = 0, 
-                    .game_state = ONGOING,
-                };
-    
-    strcpy(&game.log.nj, player_name); //inicializa o nome do jogador
-
-    return game;
-}
-
 game_state_t analise_move(game_t *game_pt)
 { // MAX_SEQUENCE_SIZE
 

@@ -412,7 +412,7 @@
         <mxCell id="n_w2t4fLf4rySCo6PCcj-7" value="" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="230" y="1114.47" width="160" height="155" as="geometry" />
         </mxCell>
-        <mxCell id="n_w2t4fLf4rySCo6PCcj-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="n_w2t4fLf4rySCo6PCcj-8">
+        <mxCell id="n_w2t4fLf4rySCo6PCcj-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="n_w2t4fLf4rySCo6PCcj-8" target="n_w2t4fLf4rySCo6PCcj-10">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="520" y="1197" as="targetPoint" />
           </mxGeometry>
@@ -422,11 +422,11 @@
         </mxCell>
         <mxCell id="n_w2t4fLf4rySCo6PCcj-25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="n_w2t4fLf4rySCo6PCcj-10">
           <mxGeometry relative="1" as="geometry">
-            <mxPoint x="590" y="1350" as="targetPoint" />
+            <mxPoint x="700" y="1350" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="n_w2t4fLf4rySCo6PCcj-10" value="Thread2: Cria novo jogo e inicializa o que fôr necessário (preciso de saber qual dos clientes está associado a cada jogo, toca a guardar fd)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="520" y="1145.97" width="140" height="101" as="geometry" />
+          <mxGeometry x="630" y="1145.97" width="140" height="101" as="geometry" />
         </mxCell>
         <mxCell id="n_w2t4fLf4rySCo6PCcj-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="n_w2t4fLf4rySCo6PCcj-13" target="n_w2t4fLf4rySCo6PCcj-15">
           <mxGeometry relative="1" as="geometry" />
@@ -455,10 +455,13 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="n_w2t4fLf4rySCo6PCcj-23" value="Thread 1: Cria thread 2" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="525" y="1025" width="130" height="60" as="geometry" />
+          <mxGeometry x="635" y="1025" width="130" height="60" as="geometry" />
         </mxCell>
         <mxCell id="n_w2t4fLf4rySCo6PCcj-26" value="Thread 3: Corre o jogo e é criada uma destas por cada jogo" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="530" y="1350" width="120" height="60" as="geometry" />
+          <mxGeometry x="640" y="1350" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="n_w2t4fLf4rySCo6PCcj-30" value="Enviamos informação sobre quem foi o cliente, o nível de dificuldade e o nome recebidos" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="414" y="1160" width="190" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
