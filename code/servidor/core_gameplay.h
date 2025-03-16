@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdbool.h>
-#include "include/mastermind.h"
+#include "../include/mastermind.h"
 #include <string.h>
 
 /****************** Defines *******************/
