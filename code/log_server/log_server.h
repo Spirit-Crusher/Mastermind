@@ -6,8 +6,10 @@
 #include <time.h>
 #include <pthread.h>
 #include <mqueue.h>
-
+#include <signal.h>
 #include <stdbool.h>
+
+
 #include "../include/mastermind.h"  //! tornar o resto assim
 
 #include <stdlib.h>
