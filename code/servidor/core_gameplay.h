@@ -5,10 +5,12 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdbool.h>
-#include "../include/mastermind.h"  //! tornar o resto assim
+#include "mastermind.h"
+#include <string.h>
 
 /****************** Defines *******************/
 #define MAX_SEQUENCE_SIZE 8
+#define NO_TIME_REGISTERED -1
 
 /****************** Enums *******************/
 typedef enum
