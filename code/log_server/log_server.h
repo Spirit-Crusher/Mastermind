@@ -56,7 +56,7 @@ void open_file(int* mfd_p, log_tabs_t** tabel_p);
 void get_tab_n(log_single_tab_t* single_tab, int diff);
 
 /* del_tab_n
-* @arg: diff -> dificuldade da tabela a pagar (diff= DIF_ALL -> todas)
+* @arg: diff -> dificuldade da tabela a apagar (diff= DIF_ALL -> todas)
 * @details: faz reset das tabelas de dificuldade
 */
 void del_tab_n(int diff);
