@@ -3,18 +3,110 @@
 
 //terei de verificar se de facto é necessário que isto seja global
 char buffer_stream[100], buffer_dgram[100]; //posso usar só 1 buffer com mutex I think mas acho que ia tornar tudo mais lento sem necessidade e o prof não especifica
+pthread_t thread_middleman;
+pthread_t thread_gameinstance[NJMAX]; //acho que isto pode ser local ao middleman
+game_t* game_instances[NJMAX] = {0};
+bool new_game = false;
+pthread_mutex_t games_mutex;
+
+
+//inicialização do jogo
+void create_new_game(game_t* game)
+{
+    strcpy(game->correct_sequence, "AAAA"); //inicializa o nome do jogador
+    game->log.nd = buffer_dgram[8]; //dificuldade está na posição 8
+    strncpy(game->log.nj, &buffer_dgram[4], 3); //inicializa o nome do jogador
+    game->log.nj[3] = '\0'; //adicionar terminação da string
+    game->log.nt = 0;
+    game->log.ti = time(NULL);
+    game->log.tf = NO_TIME_REGISTERED; //inicializei com alguma coisa para conseguir perceber se der problemas
+    game->n_char = 4;
+    game->nt_max = 3; 
+    
+    //game->player_move = "0000"; desnecessário (provavelmente), also tem de ser com strcpy
+
+    game->np = 0;
+    game->nb = 0;
+    game->game_state = ONGOING;
+
+    printf("[INFO] Init funcionou\n");
+
+    return;
+}
+
+void* thread_func_gameinstance(void* arg)
+{   
+    int game_number = *(int *) arg;
+    game_t* current_game = NULL;
+
+    current_game = malloc(sizeof(game_t));
+    if (current_game == NULL) 
+    {
+        perror("[ERRO] Falha a alocar estrutura do jogo");
+        exit(-1);
+    }
+
+    game_instances[game_number] = current_game;
+
+    create_new_game(game_instances[game_number]);
+    printf("[INFO] Jogo foi nº%d iniciado\n", game_number);
+
+    while (true)
+    {
+
+    }
+
+    //FAZER FREE PLZ
+    
+}
+
+void* thread_func_middleman()
+{
+    while (true)
+    {
+        //criação de novos jogos
+        if (new_game)
+        {
+            for (int i = 0; i < NJMAX; i++)
+            {
+                if (thread_gameinstance[i] == 0) //verificar onde há uma posição vazia
+                {
+                    //começar novo jogo
+                    if (pthread_create(&thread_gameinstance[i], NULL, thread_func_gameinstance, (void*) &i) != 0)
+                    {
+                        printf("[ERRO] Criação da thread de jogo nº%d falhou\n", i);
+                    }
+                    else
+                    {
+                        printf("[INFO] Thread de jogo nº%d criada com sucesso\n", i);
+                    }
+                    break; //já criámos thread, podemos prosseguir
+                }
+            }
+
+            pthread_mutex_lock(&games_mutex);
+            new_game = false;
+            pthread_mutex_unlock(&games_mutex);
+        }
+
+        //gestão dos jogos já existentes. maybe not. isso pode ser feita pela própria game instance. 
+        //nesse caso não preciso de mutex, basta um semáforo que informe o middle man que tem de criar novo jogo
+
+    }
+}
 
 //talvez dê para comprimir writes da função 
-void process_stream(int socket_descriptor)
+void stream_handler(int socket_descriptor)
 {
     if(!strncmp(buffer_stream, "cnj", 3))
     {
-        //começar novo jogo com recurso a thread middleman enviando nome, nível de dificuldade, e socket descriptor(talvez n seja má ideia criar associação entre nome e socket?)
-
-
-
-
         printf("[INFO] SERVER_STREAM: O jogador com descriptor %d deseja começar um novo jogo: %s\n", socket_descriptor, buffer_stream);
+        
+        //ATIVAR MIDDLEMAN
+        pthread_mutex_lock(&games_mutex);
+        new_game = true;
+        pthread_mutex_unlock(&games_mutex);
+
         //enviar mensagem ao jogador para lhe confirmar que request foi aceite
         if(write(socket_descriptor, GAME_ACCEPTED, strlen(GAME_ACCEPTED)+1) < 0)    
         {
@@ -25,7 +117,7 @@ void process_stream(int socket_descriptor)
     {
         //enviar jogada associada ao socket de onde foi recebida stream para a thread de jogo adequada
 
-
+        //semáforos?(um para cada jogo a avisar que jogada está pronta ou assim)
 
 
         printf("[INFO] SERVER_STREAM: O jogador com descriptor %d deseja fazer a seguinte jogada: %s\n", socket_descriptor, buffer_stream);
@@ -41,26 +133,14 @@ void process_stream(int socket_descriptor)
     }
 }
 
-//inicialização do jogo
-game_t create_new_game(char* player_name, int dificulty)
+void datagram_handler(int socket_descriptor, struct sockaddr_un client_addr, socklen_t client_addrlen)
 {
-    game_t game = { .correct_sequence = "AAAA", 
-                    .log.nd = dificulty, 
-                    /*.log.nj = , para isto faço strcpy*/ 
-                    .log.nt = 0, 
-                    .log.ti = time(NULL), 
-                    .log.tf = NO_TIME_REGISTERED, //inicializei com alguma coisa para conseguir perceber se der problemas
-                    .n_char = 4, 
-                    .nt_max = 3, 
-                    .player_move = "BCAA", 
-                    .np = 0, 
-                    .nb = 0, 
-                    .game_state = ONGOING,
-                };
-    
-    strcpy(&game.log.nj, player_name); //inicializa o nome do jogador
-
-    return game;
+    printf("[INFO] SERVER_DATAGRAMA: Recebi\"%s\" do cliente \"%s\" \n", buffer_dgram, client_addr.sun_path); //mostrar o que foi recebido
+    //enviar algo para o cliente 
+    if(sendto(socket_descriptor, MSG, strlen(MSG)+1, 0, (struct sockaddr*) &client_addr, client_addrlen) < 0)
+    {
+        perror("[ERRO] Erro no envio de datagrama");
+    }
 }
 
 //esta função está uma macacada enorme, vou ter de passar isto para várias funções
@@ -130,7 +210,7 @@ void communications()
     printf("[INFO] À espera de receber conexões dos clientes...\n");
   
     //receber mensagens dos clientes
-    while(1)
+    while(true)
     {
         FD_ZERO(&rfds); //limpar set
         FD_SET(sd_stream, &rfds); //adicionar socket que está listening ao set (para select conseguir ver se temos novos clientes)
@@ -194,7 +274,7 @@ void communications()
                 }
                 else 
                 {
-                    process_stream(s); //processar request
+                    stream_handler(s); //processar request
                 }
             }
         }
@@ -209,13 +289,7 @@ void communications()
             }
             else
             {
-                printf("[INFO] SERVER_DATAGRAMA: Recebi\"%s\" do cliente \"%s\" \n", buffer_dgram, client_addr.sun_path); //mostrar o que foi recebido
-                    
-                //enviar algo para o cliente
-                if(sendto(sd_datagram, MSG, strlen(MSG)+1, 0, (struct sockaddr*) &client_addr, client_addrlen) < 0)
-                {
-                    perror("[ERRO] Erro no envio de datagrama");
-                }
+                datagram_handler(sd_datagram, client_addr, client_addrlen); //processar request
             }
         }
         
@@ -233,7 +307,20 @@ void communications()
 
 int main() {
 
+    //criar mutex
+    if(pthread_mutex_init(&games_mutex, NULL) != 0)
+    {
+        perror("[ERRO] Criação do mutex falhou");
+    }
+
+    //criar middleman
+    if (pthread_create(&thread_middleman, NULL, thread_func_middleman, NULL) != 0)
+    {
+        perror("[ERRO] Criação da thread middleman falhou\n");
+    }
+    else printf("[INFO] MIDDLEMAN criado\n");
+
     communications();
-    
+
     return 0;
 }

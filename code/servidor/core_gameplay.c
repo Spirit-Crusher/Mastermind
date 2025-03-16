@@ -1,4 +1,4 @@
-#include "core_gameplay.h"
+#include "mastermind.h"
 
 
 /*void run_the_game()

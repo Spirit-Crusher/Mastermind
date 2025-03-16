@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <pthread.h>
 
 /****************** Defines *******************/
 #define NJMAX 4                    /* número máximo de jogadores em simultâneo */
@@ -55,7 +56,7 @@ typedef struct // variável de estado do jogo
 {
     char correct_sequence[MAX_SEQUENCE_SIZE]; // sequência correta definida no início do jogo
     rjg_t log;                                // log do jogo para ser enviado depois ser armazenado
-    const unsigned short int n_char;          // número de caracteres na sequência
+    unsigned short int n_char;          // número de caracteres na sequência
     unsigned short int nt_max;                // número de tentativas total do jogador
     char player_move[MAX_SEQUENCE_SIZE];      // sequência enviada pelo utilizador
     unsigned short int np;                    // número de letras certas no sítio certo

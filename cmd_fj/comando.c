@@ -16,7 +16,9 @@
 #define DIMPLAY1 3
 #define DIMPLAY2 5
 #define CLINAME "/tmp/CLI"
-#define SERVERNAME "/tmp/GAME_SERVER"
+#define JMMSERVSD "/tmp/JMMSERVSD" /* nome do servidor de jogo (socket datagram) */
+#define JMMSERVSS "/tmp/JMMSERVSS" /* nome do servidor de jogo (socket stream) */
+#define JMMLOGSD "/tmp/JMMLOGS"    /* nome do registo histórico (socket datagram) */
 
 int sd_stream;
 int sd_datagram;
@@ -83,7 +85,7 @@ void cmd_cnj (int argc, char** argv){
 
       srv_addr_s.sun_family = AF_UNIX;
       memset(srv_addr_s.sun_path, 0, sizeof(srv_addr_s.sun_path));
-      strcpy(srv_addr_s.sun_path, SERVERNAME);      
+      strcpy(srv_addr_s.sun_path, JMMSERVSS);      
       addrlen_s = sizeof(srv_addr_s.sun_family) + strlen(srv_addr_s.sun_path);
     
       if(connect(sd_stream, (struct sockaddr *)&srv_addr_s, addrlen_s) < 0){
@@ -91,7 +93,8 @@ void cmd_cnj (int argc, char** argv){
         return;     // retorna para a "linha de comandos"
       }
       
-      strcpy(new_game, strcat(strcat(strcat(argv[0], " "), strcat(argv[1], " ")), argv[2]));
+      sprintf(new_game, "%s %s %s", argv[0], argv[1], argv[2]);
+      /*strcpy(new_game, strcat(strcat(strcat(argv[0], " "), strcat(argv[1], " ")), argv[2]));*/
       if((write(sd_stream, new_game, strlen(new_game) + 1) < 0)){
         perror("Erro no write para o servidor. Tentar novamente:\n");
       }else{
@@ -121,7 +124,7 @@ void cmd_cnj (int argc, char** argv){
   
       to_d.sun_family = AF_UNIX;
       memset(to_d.sun_path, 0, sizeof(to_d.sun_path));
-      strcpy(to_d.sun_path, SERVERNAME);
+      strcpy(to_d.sun_path, JMMSERVSD);
       tolen_d = sizeof(my_addr_d.sun_family) + strlen(to_d.sun_path);
   
       /*
