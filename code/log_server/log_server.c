@@ -7,7 +7,6 @@
 
 
 /***************************** global variables *******************************/
-struct mq_attr ma; //!! por local e static
 bool STATUS_ON = true;
 pthread_mutex_t file_mux;
 
@@ -88,7 +87,7 @@ int main()
       printf("SERV: Recebi: cmd=%s n=%i Path: %s\n", msg_recieved.cmd, msg_recieved.arg_n, from.sun_path);
 
       if (strcmp(msg_recieved.cmd, "ltc") == 0) { //* - listar tabela(s) classificação nível n (0-todos)
-        printf("listar tabela(s) classificação nível n=\n", msg_recieved.arg_n);
+        printf("listar tabela(s) classificação nível n=%i\n", msg_recieved.arg_n);
         pthread_mutex_lock(&file_mux);  //entra na zona critical
         switch (msg_recieved.arg_n) {
         case DIFF_ALL:
@@ -113,7 +112,7 @@ int main()
       }
 
       else if (strcmp(msg_recieved.cmd, "rtc") == 0) { //*- reinicializar tabela(s) classificação nível n (0-todos)
-        printf("reinicializar tabela(s) classificação nível n=\n", msg_recieved.arg_n);
+        printf("reinicializar tabela(s) classificação nível n=%i\n", msg_recieved.arg_n);
         pthread_mutex_lock(&file_mux);  //entra na zona critical
         del_tab_n(msg_recieved.arg_n);
         pthread_mutex_unlock(&file_mux);  //sair da zona crítica
@@ -144,14 +143,17 @@ int main()
 /***************************** queue_handler *******************************/
 void* queue_handler(void* pi) {
   printf("queue_handler: begin thread\n");
+
+  //variáveis queue
   int mqids;
-  rjg_t game_save;
+  struct mq_attr ma;
 
   // variáveis para abrir ficheiro 
   int mfd;
   log_tabs_t* tabel;
 
   struct timespec tm;
+  rjg_t game_save;
 
   // definir termination signal handler 
   if (signal(SIGTERM, termination_handler) == SIG_ERR) {

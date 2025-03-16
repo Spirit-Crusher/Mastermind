@@ -230,11 +230,11 @@ void test_datagram_trh() {
 
 
 int main() {
-    //test_datagram_ltc();
+    test_datagram_ltc();
     //test_datagram_rtc();
     //test_datagram_trh();
     //int verbose = 0; queue_test_add_game(verbose);
-    int verbose = 1; test_print_memory(verbose);
+    //int verbose = 1; test_print_memory(verbose);
 
 
     return 0;
