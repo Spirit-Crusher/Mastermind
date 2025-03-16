@@ -36,7 +36,7 @@ typedef enum
 typedef struct
 {               /* estrutura de um registo de jogo */
     int nd;     /* nível de dificuldade do jogo */
-    char nj[4]; /* nome do jogador (3 caracteres) */
+    char nj[4]; /* nome do jogador (3 carateres) */
     int nt;     /* número de tentativas usadas */
     time_t ti;  /* estampilha temporal início do jogo */
     time_t tf;  /* estampilha temporal fim do jogo */
