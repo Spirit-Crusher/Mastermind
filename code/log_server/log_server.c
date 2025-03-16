@@ -17,6 +17,21 @@
 struct mq_attr ma; //!! por local e static
 
 
+/***************************** termination_handler *******************************/
+void termination_handler(int signum)
+{
+  //exit here or notify other processes to end
+  printf("termination_handler: starting exit\n");
+
+  //TODO -> por na main
+  /*
+  if (signal(SIGTERM, termination_handler) == SIG_ERR) {
+    printf("error setting SIGTERM signal\n");
+  }
+    */
+}
+
+
 /***************************** queue_handler *******************************/
 void* queue_handler(void* pi)
 {
