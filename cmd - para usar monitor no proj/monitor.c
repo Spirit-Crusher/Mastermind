@@ -103,7 +103,7 @@ int my_getline (char** argv, int argvsize){
 /*-------------------------------------------------------------------------+
 | Function: monitor        (called from main) 
 +--------------------------------------------------------------------------*/ 
-void monitor (void){
+void monitor(void){
   static char *argv[ARGVECSIZE + 1], *p;
   int argc, i;
 
