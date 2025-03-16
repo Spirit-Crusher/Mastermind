@@ -15,6 +15,7 @@
 #define NJMAX 4                    /* número máximo de jogadores em simultâneo */
 #define MAXNJ 10                  /* valor inicial do número máximo de jogadas (tentativas) */
 #define MAXT 5                     /* valor inicial do tempo máximo de jogo (minutos) */
+#define TOPN 10                    /* número de registos em cada tabela de nível */
 #define JMMLOG "JOGOS.LOG"         /* ficheiro com registo histórico */
 #define JMMSERVSD "/tmp/JMMSERVSD" /* nome do servidor de jogo (socket datagram) */
 #define JMMSERVSS "/tmp/JMMSERVSS" /* nome do servidor de jogo (socket stream) */
@@ -61,6 +62,19 @@ typedef struct // variável de estado do jogo
     // unsigned short int nt_left;               // número de tentativas que restam ao jogador //! adicionei este
     game_state_t game_state; // estado do jogo = {ONGOING,PLAYER_WIN,PLAYER_LOST}
 } game_t;
+
+typedef struct {
+    rjg_t tb[TOPN];
+    int tb_n_games;
+    int tb_diff;
+} log_single_tab_t;
+
+typedef struct {
+    char cmd[5];             //tamanho máximo dos comandos é 4
+    int arg_n;                 // valor do argumento "n"
+} msg_to_JMMlog;
+
+
 
 
 /***************************  Fuctions ***************************/

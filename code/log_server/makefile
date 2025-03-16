@@ -22,11 +22,11 @@ default: ./MMJ_log.exe
 run: default
 	./MMJ_log.exe
 
-build/log_server.o: log_server.c log_server.h include/mastermind.h
+log_server_build/log_server.o: log_server.c log_server.h ../include/mastermind.h
 	@mkdir -p build
 	$(CC) $(CFLAGS) -c $< -o $@
 
-./MMJ_log.exe: log_server.o
+./MMJ_log.exe: log_server_build/log_server.o
 	@mkdir -p bin
 	$(CC) $^ -o $@
 

@@ -2,6 +2,7 @@
     "files.associations": {
         "log_server.h": "c",
         "fcntl.h": "c",
-        "typeinfo": "c"
+        "typeinfo": "c",
+        "stdio.h": "c"
     }
 }

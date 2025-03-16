@@ -21,17 +21,19 @@
 
 
 /****************** Defines *******************/
-#define TOPN 10                    /* número de registos em cada tabela de nível */
+#define JMM_LOG_NCOMMANDS (sizeof(commands)/sizeof(struct command_d))
 #define MSIZE sizeof(log_tabs_t)    
 
 /****************** Structs *******************/
 typedef struct {
     rjg_t tb1[TOPN];
-    unsigned int tb1_n_games;
+    int tb1_n_games;
     rjg_t tb2[TOPN];
-    unsigned int tb2_n_games;
+    int tb2_n_games;
 } log_tabs_t;
 
 
+/*************** Function Prototypes *****************/
+void get_tab_n(log_single_tab_t* single_tab, int diff);
 
 #endif
