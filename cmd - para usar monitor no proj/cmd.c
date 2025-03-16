@@ -1,9 +1,8 @@
 #include <stdio.h>
 
-extern void monitor(void);
+void monitor(void);
 
-int main(void)
-{
+int main(void){
   monitor();
 
   return 0;
