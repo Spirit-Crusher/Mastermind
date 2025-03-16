@@ -1,7 +1,6 @@
 #include "core_gameplay.h"
 #include <stdio.h>
 
-//COLOCAR NO SERVIDOR.C
 #define SV_DATAGRAM "/tmp/SV_DATAGRAM"
 #define SV_STREAM "/tmp/SV_STREAM"
 #define MSG "SERVER IS ALIVE AND WELL"
@@ -24,12 +23,12 @@ void communications()
     //criação das sockets do servidor
     if((sd_stream = socket(AF_UNIX, SOCK_STREAM, 0)) < 0 ) 
     {
-        perror("Erro a criar socket"); 
+        perror("[ERRO] Não foi possível criar socket stream");
         exit(-1);
     }
     if((sd_datagram = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0 ) 
     {
-        perror("Erro a criar socket"); 
+        perror("[ERRO] Não foi possível criar socket datagrama"); 
         exit(-1);
     }
   
@@ -38,7 +37,7 @@ void communications()
     //inicializar socket STREAM
     streamsv_addr.sun_family = AF_UNIX;
     memset(streamsv_addr.sun_path, 0, sizeof(streamsv_addr.sun_path));
-    strcpy(streamsv_addr.sun_path, SV_STREAM);
+    strcpy(streamsv_addr.sun_path, SV_STREAM); //definir path para a socket (vai ficar no /tmp/...)
     streamsv_addrlen = sizeof(streamsv_addr.sun_family) + strlen(streamsv_addr.sun_path);
   
     //inicializar socket DATAGRAM
@@ -48,11 +47,6 @@ void communications()
     dgramsv_addrlen = sizeof(dgramsv_addr.sun_family) + strlen(dgramsv_addr.sun_path);
   
   
-    /*streamsv_addr.sun_family = AF_UNIX;
-    memset(server_addr.sun_path, 0, sizeof(server_addr.sun_path)); //tenho de inicializar desta maneira? Não posso só fazer strcpy diretamente?
-    strcpy(server_addr.sun_path, SERVERNAME);   //definir path para a socket (vai ficar no /tmp)
-    server_addrlen = sizeof(server_addr.sun_family) + strlen(server_addr.sun_path);
-    */
     unlink(SV_DATAGRAM); //remover ficheiro socket caso este já tenha sido criado previamente
     unlink(SV_STREAM);
   
@@ -97,10 +91,10 @@ void communications()
         }
   
         //esperar por pedido de conexão (bloqueia)
-        printf("Estou no select\n");
+        printf("[AVISO] Estou no select\n");
         if((request_made = select(max_sd + 1, &rfds, NULL, NULL, NULL)) < 0 /*&& errno != EINTR*/)
         {
-            perror("Erro no select");
+            perror("[ERRO] Select deu erro");
         }
   
         //existem pedidos, vamos aceitar conexão
@@ -109,11 +103,11 @@ void communications()
             client_addrlen = sizeof(client_addr);
             if((new_sock = accept(sd_stream, (struct sockaddr *)&client_addr, &client_addrlen)) < 0) 
             {
-                perror("Erro no accept");
+                perror("[ERRO] Accept deu erro");
                 exit(-1);
             }
   
-            printf("Novo cliente conectado\n");
+            printf("[AVISO] Novo cliente conectado.\n");
   
             // Adicionar o novo cliente ao array de sockets
             for(i = 0; i < NJMAX; ++i) 
@@ -121,7 +115,7 @@ void communications()
                 if(client_sockets_fd[i] == 0) //procurar "espaço vazio" no array
                 {
                     client_sockets_fd[i] = new_sock;
-                    printf("Socket guardada no indice: %d\n", i);
+                    printf("[INFO] Socket guardada no indice: %d\n", i);
                     break; //se já encontrei não vale a pena continuar a iterar
                 }
             }
@@ -137,18 +131,18 @@ void communications()
               //ler mensagem do cliente
               if(read(s, buffer_stream, sizeof(buffer_stream)) <= 0) 
               {
-                  perror("Cliente desconectou-se");
+                  perror("[AVISO] Cliente desconectou-se");
                   close(s);
                   client_sockets_fd[i] = 0;
               }
               else 
               {
-                  printf("SERVER_STREAM: Recebi \"%s\" do cliente com sd \"%d\"\n", buffer_stream, s); //mostrar o que foi recebido
+                  printf("[INFO] SERVER_STREAM: Recebi \"%s\" do cliente com sd \"%d\"\n", buffer_stream, s); //mostrar o que foi recebido
                   
                   //enviar algo para o cliente
                   if(write(s, MSG, strlen(MSG)+1) < 0)    
                   {
-                      perror("Erro no write");
+                      perror("[ERRO] Erro no envio de stream");
                   }
               }
             }
@@ -160,16 +154,16 @@ void communications()
           client_addrlen = sizeof(client_addr);
           if(recvfrom(sd_datagram, buffer_dgram, sizeof(buffer_dgram), 0, (struct sockaddr *) &client_addr, &client_addrlen) < 0)
           {
-            perror("Erro no recvfrom");
+            perror("[ERRO] Erro na recepção de datagrama");
           }
           else
           {
-            printf("SERVER: Recebi\"%s\" do cliente \"%s\" \n", buffer_dgram, client_addr.sun_path); //mostrar o que foi recebido
+            printf("[INFO] SERVER_DATAGRAMA: Recebi\"%s\" do cliente \"%s\" \n", buffer_dgram, client_addr.sun_path); //mostrar o que foi recebido
                 
             //enviar algo para o cliente
             if(sendto(sd_datagram, MSG, strlen(MSG)+1, 0, (struct sockaddr*) &client_addr, client_addrlen) < 0)
             {
-                perror("Erro no sendto");
+                perror("[ERRO] Erro no envio de datagrama");
             }
           }
         }
@@ -180,7 +174,7 @@ void communications()
     //NAO ESQUECER DE FECHAR SOCKET E DAR UNLINK
     close(sd_stream);
     close(sd_datagram);
-    /*close(s);*/ //aqui já não é ncessário fazer porque fizemos no loop sempre que cliente se disconecta
+    /*close(s);*/ //aqui já não é ncessário fazer porque fizemos no loop sempre que cliente se disconecta (altough o que é que acontece se client crashar?)
     unlink(SV_DATAGRAM);
     unlink(SV_STREAM);
 }
