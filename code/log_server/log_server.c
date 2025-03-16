@@ -7,20 +7,8 @@
 
 
 /***************************** global variables *******************************/
-bool STATUS_ON = true;
-pthread_mutex_t file_mux;
-
-/*
-struct 	command_d {
-  void  (*cmd_fnct)(int, char**);
-  char* cmd_name;
-  char* cmd_help;
-} const commands[] = {
-  {get_tab_n, "ltc","<arg n> listar tabela(s) classificação nível n"},
-  {cmd_rtc, "rtc","<arg n> reinicializar tabela(s) classificação nível n (0-todos)"},
-  {cmd_trh, "trh","terminar processo de registo histórico (JMMlog)"}
-}; */
-
+bool STATUS_ON = true;  // variável que avisa o programa se deve terminar ou não
+pthread_mutex_t file_mux; // mutex para acesso ao ficheiro com logs de jogo
 
 /***************************** termination_handler *******************************/
 void termination_handler(int signum)
@@ -80,14 +68,16 @@ int main()
     exit(-1);
   }
 
-  while (STATUS_ON) { // receber datagramas and parse
+  while (STATUS_ON) { // receber datagramas e enviar respostas
     fromlen = sizeof(from);
     if (recvfrom(socket_d, &msg_recieved, sizeof(msg_recieved), 0, (struct sockaddr*)&from, &fromlen) < 0)    perror("Erro no recvfrom");
     else {
       printf("SERV: Recebi: cmd=%s n=%i Path: %s\n", msg_recieved.cmd, msg_recieved.arg_n, from.sun_path);
 
-      if (strcmp(msg_recieved.cmd, "ltc") == 0) { //* - listar tabela(s) classificação nível n (0-todos)
+      //************** - ltc: listar tabela(s) classificação nível n (0-todos)
+      if (strcmp(msg_recieved.cmd, "ltc") == 0) {
         printf("listar tabela(s) classificação nível n=%i\n", msg_recieved.arg_n);
+
         pthread_mutex_lock(&file_mux);  //entra na zona critical
         switch (msg_recieved.arg_n) {
         case DIFF_ALL:
@@ -110,18 +100,21 @@ int main()
         }
         pthread_mutex_unlock(&file_mux);  //sair da zona crítica
       }
-
-      else if (strcmp(msg_recieved.cmd, "rtc") == 0) { //*- reinicializar tabela(s) classificação nível n (0-todos)
+      //************** - rtc: reinicializar tabela(s) classificação nível n (0-todos)
+      else if (strcmp(msg_recieved.cmd, "rtc") == 0) {
         printf("reinicializar tabela(s) classificação nível n=%i\n", msg_recieved.arg_n);
         pthread_mutex_lock(&file_mux);  //entra na zona critical
         del_tab_n(msg_recieved.arg_n);
         pthread_mutex_unlock(&file_mux);  //sair da zona crítica
       }
 
-      else if (strcmp(msg_recieved.cmd, "trh") == 0) { //*- terminar processo de registo histórico (JMMlog)
+      //************** - trh: terminar processo de registo histórico (JMMlog)
+      else if (strcmp(msg_recieved.cmd, "trh") == 0) {
         printf("terminar processo de registo histórico (JMMlog)\n");
         STATUS_ON = false;
       }
+
+      //************** - comando não válido
       else {
         perror("comando recebido inválido\n");
       }
@@ -135,14 +128,14 @@ int main()
 
   pthread_join(thread_queue_handler, NULL); // se a main terminar, o processo termina, e todos as threads associadas também
 
-  printf("MMJ terminado com sucesso\n");
+  printf("JMMlog todas as threads terminadas - Clena Exit\n");
   return 0;
 }
 
 /***************************************************************************/
 /***************************** queue_handler *******************************/
 void* queue_handler(void* pi) {
-  printf("queue_handler: begin thread\n");
+  printf("queue_handler: começar thread\n");
 
   //variáveis queue
   int mqids;
@@ -157,41 +150,41 @@ void* queue_handler(void* pi) {
 
   // definir termination signal handler 
   if (signal(SIGTERM, termination_handler) == SIG_ERR) {
-    printf("error setting SIGTERM signal\n");
+    perror("error setting SIGTERM signal\n");
   }
   if (signal(SIGINT, termination_handler) == SIG_ERR) {
-    printf("error setting SIGTERM signal\n");
+    perror("error setting SIGTERM signal\n");
   }
 
-  // open queue
+  // abrir queue
   printf("queue_handler: abrir queue\n");
   ma.mq_flags = 0;
   ma.mq_maxmsg = 3;
   ma.mq_msgsize = sizeof(game_save);
   if ((mqids = mq_open(JMMLOGQ, O_RDWR | O_CREAT, 0666, &ma)) < 0) {
     perror("queue_handler: Erro a criar queue servidor\n");
-    exit(-1); // TODO exit? ou return? -> (exit mata o processo todo, not a clean exit)-> implement clean exit, with returns I guess
+    exit(-1); //? exit? ou return? -> (exit mata o processo todo, not a clean exit)-> implement clean exit, with returns I guess
   }
   printf("queue_handler: acabei de abrir queue\n");
 
 
-  // continually parse messages
+  // receber mensagens da queue e processá-las
   while (STATUS_ON) {
-    // get message/game log
-    printf("\nqueue_handler: get message/game log\n");
-    //?clock_gettime(CLOCK_REALTIME, &tm);
-    //?tm.tv_sec += 10;  // Set for 1 seconds
-    //?if (mq_timedreceive(mqids, (char*)&game_save, sizeof(game_save), NULL, &tm) < 0) {
-    if (mq_receive(mqids, (char*)&game_save, sizeof(game_save), NULL) < 0) {
+    // receber game log
+    printf("\nqueue_handler: pronto receber game log\n");
+    //TODO clock_gettime(CLOCK_REALTIME, &tm);
+    //TODO tm.tv_sec += 10;  // Set for 1 seconds
+    //TODO if (mq_timedreceive(mqids, (char*)&game_save, sizeof(game_save), NULL, &tm) < 0) {
+    if (mq_receive(mqids, (char*)&game_save, sizeof(game_save), NULL) < 0) {  //!! Implementar mq_timedreceive para poder ter uma clean exit (a função parece não existir)
       perror("queue_handler: erro a receber mensagem ou timeout");
     }
 
     pthread_mutex_lock(&file_mux);  //entering critical secttion
 
-    // abrir ficheiro com mmap
+    // abrir ficheiro com mmap e mapiá-lo a uma variável
     open_file(&mfd, &tabel);
 
-    /* guardar o jogo na memória */
+    // guardar o jogo na memória
     printf("queue_handler: guardar o jogo na memória\n");
     switch (game_save.nd)
     {
@@ -230,6 +223,7 @@ void* queue_handler(void* pi) {
   if (mq_unlink(JMMLOGQ) < 0) {
     perror("queue_handler: Erro a eliminar queue");
   }
+  printf("queue_handler: queue_handler terminado de forma limpa\n");
 }
 
 

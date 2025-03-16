@@ -34,10 +34,18 @@ typedef struct {
 
 
 /*************** Function Prototypes *****************/
+
+/* queue_handler
+* @details: takes care of the queue of oncoming data from JMMserv
+*/
 void* queue_handler(void* pi);
+
 void open_file(int* mfd_p, log_tabs_t** tabel_p);
+
 void get_tab_n(log_single_tab_t* single_tab, int diff);
+
 void del_tab_n(int diff);
+
 void del_tab_n(int diff);
 
 #endif
