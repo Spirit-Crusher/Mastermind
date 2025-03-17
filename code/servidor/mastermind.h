@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <semaphore.h>
 
 /****************** Defines *******************/
 #define NJMAX 4                    /* número máximo de jogadores em simultâneo */
@@ -63,6 +64,9 @@ typedef struct // variável de estado do jogo
     unsigned short int nb;                    // número de letras certas no sítio errado
     // unsigned short int nt_left;               // número de tentativas que restam ao jogador //! adicionei este
     game_state_t game_state; // estado do jogo = {ONGOING,PLAYER_WIN,PLAYER_LOST}
+    int sd; //socket descriptor associado a este jogador
+    struct sockaddr_un player_addr; //address do cliente
+    socklen_t addr_len; //comprimento do address
 } game_t;
 
 

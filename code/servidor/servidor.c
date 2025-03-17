@@ -5,15 +5,14 @@
 char buffer_stream[100], buffer_dgram[100]; //posso usar só 1 buffer com mutex I think mas acho que ia tornar tudo mais lento sem necessidade e o prof não especifica
 pthread_t thread_middleman;
 pthread_t thread_gameinstance[NJMAX]; //acho que isto pode ser local ao middleman
-game_t* game_instances[NJMAX] = {0};
-bool new_game = false;
-pthread_mutex_t games_mutex;
+game_t* game_instances[NJMAX] = {0}; //maybe pode ser removido, confirmar
+sem_t sem_mm, sem_handler, sem1, sem2, sem3, sem4;
 
 
 //inicialização do jogo
-void create_new_game(game_t* game)
+void create_new_game(game_t* game, int game_number)
 {
-    strcpy(game->correct_sequence, "AAAA"); //inicializa o nome do jogador
+    strcpy(game->correct_sequence, "AAA"); //inicializa o código secreto
     game->log.nd = buffer_dgram[8]; //dificuldade está na posição 8
     strncpy(game->log.nj, &buffer_dgram[4], 3); //inicializa o nome do jogador
     game->log.nj[3] = '\0'; //adicionar terminação da string
@@ -29,7 +28,9 @@ void create_new_game(game_t* game)
     game->nb = 0;
     game->game_state = ONGOING;
 
-    printf("[INFO] Init funcionou\n");
+    //inicializar novas vars que criei
+
+    printf("[INFO] Init do jogo funcionou\n");
 
     return;
 }
@@ -38,6 +39,7 @@ void* thread_func_gameinstance(void* arg)
 {   
     int game_number = *(int *) arg;
     game_t* current_game = NULL;
+    game_state_t state = ONGOING;
 
     current_game = malloc(sizeof(game_t));
     if (current_game == NULL) 
@@ -48,64 +50,79 @@ void* thread_func_gameinstance(void* arg)
 
     game_instances[game_number] = current_game;
 
-    create_new_game(game_instances[game_number]);
-    printf("[INFO] Jogo foi nº%d iniciado\n", game_number);
+    create_new_game(current_game, game_number);
+    printf("[INFO] Jogo nº%d foi iniciado\n", game_number);
 
-    while (true)
+    while (state == ONGOING)
     {
+        switch (game_number)
+        {
+            case 0:
+                sem_wait(&sem1);
+                break;
+            
+            case 1:
+                sem_wait(&sem2);
+                break;
 
+            case 2:
+                sem_wait(&sem3);
+                break;
+
+            case 3:
+                sem_wait(&sem4);
+                break;
+
+            default:
+                printf("[ERRO] Game number inválido: %d\n", game_number);
+                exit(-1);
+        }
+        strcpy(current_game->player_move, &buffer_stream[3]);
+        state = analise_move(current_game);
+        sem_post(&sem_handler);
     }
 
-    //FAZER FREE PLZ
-    
+
+    free(current_game);
 }
 
 void* thread_func_middleman()
 {
     while (true)
     {
+        sem_wait(&sem_mm);
         //criação de novos jogos
-        if (new_game)
+        for (int i = 0; i < NJMAX; i++)
         {
-            for (int i = 0; i < NJMAX; i++)
+            if (thread_gameinstance[i] == 0) //verificar onde há uma posição vazia
             {
-                if (thread_gameinstance[i] == 0) //verificar onde há uma posição vazia
+                //começar novo jogo
+                if (pthread_create(&thread_gameinstance[i], NULL, thread_func_gameinstance, (void*) &i) != 0)
                 {
-                    //começar novo jogo
-                    if (pthread_create(&thread_gameinstance[i], NULL, thread_func_gameinstance, (void*) &i) != 0)
-                    {
-                        printf("[ERRO] Criação da thread de jogo nº%d falhou\n", i);
-                    }
-                    else
-                    {
-                        printf("[INFO] Thread de jogo nº%d criada com sucesso\n", i);
-                    }
-                    break; //já criámos thread, podemos prosseguir
+                    printf("[ERRO] Criação da thread de jogo nº%d falhou\n", i);
                 }
+                else
+                {
+                    printf("[INFO] Thread de jogo nº%d criada com sucesso\n", i);
+                }
+                break; //já criámos thread, podemos prosseguir
             }
-
-            pthread_mutex_lock(&games_mutex);
-            new_game = false;
-            pthread_mutex_unlock(&games_mutex);
         }
-
-        //gestão dos jogos já existentes. maybe not. isso pode ser feita pela própria game instance. 
-        //nesse caso não preciso de mutex, basta um semáforo que informe o middle man que tem de criar novo jogo
-
     }
 }
 
 //talvez dê para comprimir writes da função 
 void stream_handler(int socket_descriptor)
 {
+    int game_number = -1;
+    char result[strlen(MOVE_REGISTERED)+8+1];
+
     if(!strncmp(buffer_stream, "cnj", 3))
     {
         printf("[INFO] SERVER_STREAM: O jogador com descriptor %d deseja começar um novo jogo: %s\n", socket_descriptor, buffer_stream);
         
         //ATIVAR MIDDLEMAN
-        pthread_mutex_lock(&games_mutex);
-        new_game = true;
-        pthread_mutex_unlock(&games_mutex);
+        sem_post(&sem_mm);
 
         //enviar mensagem ao jogador para lhe confirmar que request foi aceite
         if(write(socket_descriptor, GAME_ACCEPTED, strlen(GAME_ACCEPTED)+1) < 0)    
@@ -117,12 +134,43 @@ void stream_handler(int socket_descriptor)
     {
         //enviar jogada associada ao socket de onde foi recebida stream para a thread de jogo adequada
 
-        //semáforos?(um para cada jogo a avisar que jogada está pronta ou assim)
+        for (int i = 0; i < NJMAX; ++i)
+        {
+            if (game_instances[i]->sd == socket_descriptor)
+            {
+                game_number = i;
+            }
+        }
 
+        switch (game_number)
+        {
+            case 1:
+                sem_post(&sem1);
+                break;
+            
+            case 2:
+                sem_post(&sem2);
+                break;
+
+            case 3:
+                sem_post(&sem3);
+                break;
+
+            case 4:
+                sem_post(&sem4);
+                break;
+
+            default:
+                printf("[ERRO] Game number inválido: %d\n", game_number);
+                exit(-1);
+        }
 
         printf("[INFO] SERVER_STREAM: O jogador com descriptor %d deseja fazer a seguinte jogada: %s\n", socket_descriptor, buffer_stream);
-        //enviar mensagem ao jogador para lhe confirmar que request foi aceite
-        if(write(socket_descriptor, MOVE_REGISTERED, strlen(MOVE_REGISTERED)+1) < 0)    
+
+        //enviar mensagem ao jogador para lhe mostrar resultado da jogada
+        sem_wait(&sem_handler);
+        sprintf(result, "nb:%d np:%d", game_instances[game_number]->nb, game_instances[game_number]->np);
+        if(write(socket_descriptor, result, strlen(result)+1) < 0)    
         {
             perror("[ERRO] Erro no envio de stream");
         }
@@ -263,7 +311,7 @@ void communications()
         {
             s = client_sockets_fd[i]; //atualizar o cliente que estamos a ler
   
-            if(s > 0)
+            if(s > 0 && FD_ISSET(s, &rfds))
             {
                 //ler mensagem do cliente
                 if(read(s, buffer_stream, sizeof(buffer_stream)) <= 0) 
@@ -271,6 +319,7 @@ void communications()
                     perror("[AVISO] Cliente desconectou-se");
                     close(s);
                     client_sockets_fd[i] = 0;
+                    thread_gameinstance[i] = 0;
                 }
                 else 
                 {
@@ -304,13 +353,94 @@ void communications()
     unlink(JMMSERVSS);
 }
 
+game_state_t analise_move(game_t *game_pt)
+{ // MAX_SEQUENCE_SIZE
+
+    unsigned short int i, j, np = 0, nb = 0;
+    unsigned short int used_secret[MAX_SEQUENCE_SIZE] = {false};
+    unsigned short int used_guess[MAX_SEQUENCE_SIZE] = {false};
+
+    // incrementar o nº de jogadas
+    game_pt->log.nt++;
+
+    // procurar por letras certas no sítio certo
+    for (int i = 0; i < game_pt->n_char; ++i)
+    {
+        if (game_pt->correct_sequence[i] == game_pt->player_move[i])
+        {
+            (np)++;
+            used_secret[i] = true;
+            used_guess[i] = true;
+        }
+    }
+
+    // procurar por letras certas no sítio errado
+    for (int i = 0; i < game_pt->n_char; ++i)
+    {
+        if (!used_guess[i])
+        { // se esta posição não teve uma ligação direta
+            for (int j = 0; j < game_pt->n_char; j++)
+            {
+                if (!used_secret[j] && game_pt->correct_sequence[i] == game_pt->player_move[j])
+                {
+                    nb++;
+                    used_secret[j] = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    // guardar nº de respostas certas no sítio certo/errado
+    game_pt->nb = nb;
+    game_pt->np = np;
+
+    // decrementar o nº de jogadas que faltam
+
+    // verificar se o jogo acabou
+    if (np == game_pt->n_char)
+    {
+        // jogador ganhou
+        game_pt->log.tf = time(NULL);
+        return game_pt->game_state = PLAYER_WIN;
+    }
+    else if (game_pt->nt_max == ++(game_pt->log.nt))
+    {
+        // jogador sem mais tentativas, perdeu
+        game_pt->log.tf = time(NULL);
+        return game_pt->game_state = PLAYER_LOST;
+    }
+
+    // jogo continua
+    return ONGOING;
+}
 
 int main() {
 
-    //criar mutex
-    if(pthread_mutex_init(&games_mutex, NULL) != 0)
+    //criar semáforo para middleman
+    if(sem_init(&sem_mm, 0, 0) != 0)
     {
-        perror("[ERRO] Criação do mutex falhou");
+        perror("[ERRO] Criação do semáforo mm falhou");
+    }
+    if(sem_init(&sem_handler, 0, 0) != 0)
+    {
+        perror("[ERRO] Criação do semáforo handler falhou");
+    }
+    if(sem_init(&sem1, 0, 0) != 0)
+    {
+        perror("[ERRO] Criação do semáforo 1 falhou");
+    }
+    if(sem_init(&sem2, 0, 0) != 0)
+    {
+        perror("[ERRO] Criação do semáforo 2 falhou");
+    }
+    if(sem_init(&sem3, 0, 0) != 0)
+    {
+        perror("[ERRO] Criação do semáforo 3 falhou");
+    }
+    if(sem_init(&sem4, 0, 0) != 0)
+    {
+        perror("[ERRO] Criação do semáforo 4 falhou");
     }
 
     //criar middleman
@@ -322,5 +452,13 @@ int main() {
 
     communications();
 
+    //sair ordeiramente
+    sem_destroy(&sem_mm);
+    sem_destroy(&sem_handler);
+    sem_destroy(&sem1);
+    sem_destroy(&sem2);
+    sem_destroy(&sem3);
+    sem_destroy(&sem4);
+    
     return 0;
 }
