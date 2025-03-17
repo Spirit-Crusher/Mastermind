@@ -1,9 +1,6 @@
 #include "log_server.h"
 #include <unistd.h>
 
-//?? É preferivel deixar o ficheiro aberto e ir sincronizando ou ->**abrir e fechar o ficheiro várias vezes?**<-
-
-#define FILE "FICHEIRO.DAT"
 
 
 /***************************** global variables *******************************/
@@ -13,20 +10,27 @@ pthread_mutex_t file_mux; // mutex para acesso ao ficheiro com logs de jogo
 //variáveis da gestão do ficheiro
 int mfd;
 log_tabs_t* tabel_pt;
+//variáveis do socket
+int socket_d;
 
 /***************************** termination_handler *******************************/
-void termination_handler(int signum)
+void termination_handler()
 {
   //exit here or notify other processes to end
   printf("-------------termination_handler: starting exit----------\n");
-  //STATUS_ON = false;
 
+  pthread_mutex_lock(&file_mux);  //entra na zona critical (só fechar se ninguém estiver a usar)
   // fechar ficheiro de dados
   munmap(tabel_pt, MSIZE);
   close(mfd);
-  printf("Ficheiro de dados Fechado\n");
+  printf("termination_handler: Ficheiro de dados Fechado\n");
 
   //fechar socket
+  close(socket_d);
+  unlink(JMMLOGSD);
+  printf("termination_handler: Terminámos o socket datagram\n");
+
+  exit(0);
   return;
 }
 
@@ -38,7 +42,6 @@ int main()
   pthread_t thread_queue_handler;
 
   // variáveis do socket datagrama
-  int socket_d;
   struct sockaddr_un my_addr;
   socklen_t addrlen;
   struct sockaddr_un from;
@@ -133,7 +136,7 @@ int main()
       //************** - trh: terminar processo de registo histórico (JMMlog)
       else if (strcmp(msg_recieved.cmd, "trh") == 0) {
         printf("terminar processo de registo histórico (JMMlog)\n");
-        STATUS_ON = false;
+        termination_handler();
       }
 
       //************** - comando não válido
@@ -143,10 +146,6 @@ int main()
 
     }
   }
-  close(socket_d);
-  unlink(JMMLOGSD);
-  printf("main: terminámos o socket datagram\n");
-
 
   pthread_join(thread_queue_handler, NULL); // se a main terminar, o processo termina, e todos as threads associadas também
 
@@ -156,18 +155,14 @@ int main()
 
 /***************************************************************************/
 /***************************** queue_handler *******************************/
-void* queue_handler(void* pi) {
+void* queue_handler() {
   printf("queue_handler: começar thread\n");
 
   //variáveis queue
   int mqids;
   struct mq_attr ma;
 
-  // variáveis para abrir ficheiro 
-  int mfd;
-  log_tabs_t* tabel;
-
-  struct timespec tm;
+  //struct timespec tm;
   rjg_t game_save;
 
   // abrir queue
@@ -181,7 +176,6 @@ void* queue_handler(void* pi) {
   }
   printf("queue_handler: acabei de abrir queue\n");
 
-
   // receber mensagens da queue e processá-las
   while (STATUS_ON) {
     // receber game log
@@ -191,12 +185,10 @@ void* queue_handler(void* pi) {
     }
 
     pthread_mutex_lock(&file_mux);  //entering critical secttion
-
-    //! abrir ficheiro com mmap e mapiá-lo a uma variável
-    //open_file(&mfd, &tabel);
-
     // guardar o jogo na memória
     printf("queue_handler: guardar o jogo na memória\n");
+    //!!!!!!!!! por isto numa função à parte para pôr pur ordem
+    /*
     switch (game_save.nd)
     {
     case DIFF_1:
@@ -222,11 +214,9 @@ void* queue_handler(void* pi) {
     default:
       printf("queue_handler: difficuldade inválida\n");
       break;
-    }
+    } */
+
     printf("queue_handler: acabei de guardar jogo na memória\n");
-    //! fechar ficheiro
-    //munmap(tabel_pt, MSIZE);
-    //close(mfd);
     pthread_mutex_unlock(&file_mux);  //exiting critical secttion
   }
 
@@ -235,7 +225,9 @@ void* queue_handler(void* pi) {
     perror("queue_handler: Erro a eliminar queue");
   }
   printf("queue_handler: queue_handler terminado de forma limpa\n");
+  return NULL;
 }
+
 
 
 /***************************** open_file *******************************/
@@ -263,10 +255,6 @@ void open_file() {
 
 /***************************** get_tab_n *******************************/
 void get_tab_n(log_single_tab_t* single_tab, int diff) {
-  //int mfd;
-  //log_tabs_t* tabel;
-
-  //!open_file(&mfd, &tabel);
 
   switch (diff)
   {
@@ -295,11 +283,6 @@ void get_tab_n(log_single_tab_t* single_tab, int diff) {
 
 /***************************** del_tab_n *******************************/
 void del_tab_n(int diff) {
-
-  //int mfd;
-  //log_tabs_t* tabel;
-
-  //!open_file(&mfd, &tabel);
 
   switch (diff) {
   case DIFF_ALL:

@@ -21,6 +21,7 @@
 
 
 /****************** Defines *******************/
+#define FILE "FICHEIRO.DAT"
 #define JMM_LOG_NCOMMANDS (sizeof(commands)/sizeof(struct command_d))
 #define MSIZE sizeof(log_tabs_t)    
 
@@ -38,7 +39,7 @@ typedef struct {
 /* queue_handler
 * @details: responsável pela queue de datos provenientes do JMMserv
 */
-void* queue_handler(void* pi);
+void* queue_handler();
 
 /*! open_file
 * @return: mfd_p -> ponteiro para o file descritor do ficheiro de dados
