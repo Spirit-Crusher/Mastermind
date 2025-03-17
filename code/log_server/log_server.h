@@ -40,12 +40,13 @@ typedef struct {
 */
 void* queue_handler(void* pi);
 
-/* open_file
+/*! open_file
 * @return: mfd_p -> ponteiro para o file descritor do ficheiro de dados
 * @return: tabel_p -> ponteiro para o ponteiro da estrutura que contém os dados presentes no ficheiro de dados
 * @details: abre o ficheiro de dados e projeta este numa estrutura que é devolvida através do argumento tabel_p
 */
-void open_file(int* mfd_p, log_tabs_t** tabel_p);
+//void open_file(int* mfd_p, log_tabs_t** tabel_p);
+void open_file();
 
 /* get_tab_n
 * @return: single_tab -> estrutura com uma tabela de dificuldades inteira

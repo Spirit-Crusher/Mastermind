@@ -7,8 +7,9 @@ CC = gcc
 DEBUG_FLAGS = -g -O0
 
 # Compilation flags
-CFLAGS = -Wall -Wextra -std=c11 -D_XOPEN_SOURCE=500 -Iservidor 
+CFLAGS = -Wall -Wextra -std=c11 -D_XOPEN_SOURCE=500 -Iservidor -lrt -lpthread
 ## -D_XOPEN_SOURCE=500 devido a um erro do "implicit declaration of function ‘ftruncate’ "
+## NÃO ESQUECER as FLAGS -lrt -lpthread ---------------------------------------------------------------------------------
 
 # Conditional Debug Mode
 ifeq ($(DEBUG), 1)

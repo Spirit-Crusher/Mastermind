@@ -10,12 +10,23 @@
 bool STATUS_ON = true;  // variável que avisa o programa se deve terminar ou não
 pthread_mutex_t file_mux; // mutex para acesso ao ficheiro com logs de jogo
 
+//variáveis da gestão do ficheiro
+int mfd;
+log_tabs_t* tabel_pt;
+
 /***************************** termination_handler *******************************/
 void termination_handler(int signum)
 {
   //exit here or notify other processes to end
   printf("-------------termination_handler: starting exit----------\n");
-  STATUS_ON = false;
+  //STATUS_ON = false;
+
+  // fechar ficheiro de dados
+  munmap(tabel_pt, MSIZE);
+  close(mfd);
+  printf("Ficheiro de dados Fechado\n");
+
+  //fechar socket
   return;
 }
 
@@ -36,13 +47,24 @@ int main()
 
   log_single_tab_t msg_tab_send;
 
-
   printf("A começar JMMlog (PID=%d)\n", getpid());
+
+  // definir termination signal handler 
+  if (signal(SIGTERM, termination_handler) == SIG_ERR) {
+    perror("error setting SIGTERM signal\n");
+  }
+  if (signal(SIGINT, termination_handler) == SIG_ERR) {
+    perror("error setting SIGTERM signal\n");
+  }
 
   if (pthread_mutex_init(&file_mux, NULL) != 0) {
     printf("Erro a inicializar mutex\n");
     return -1;
   }
+
+
+  // abrir ficheiro com mmap e mapiá-lo a uma variável
+  open_file(&mfd, &tabel_pt);
 
   //* começar thread_queue_handler -- comunicação com JMMserv
   printf("main: criar thread Queue Handler\n");
@@ -148,14 +170,6 @@ void* queue_handler(void* pi) {
   struct timespec tm;
   rjg_t game_save;
 
-  // definir termination signal handler 
-  if (signal(SIGTERM, termination_handler) == SIG_ERR) {
-    perror("error setting SIGTERM signal\n");
-  }
-  if (signal(SIGINT, termination_handler) == SIG_ERR) {
-    perror("error setting SIGTERM signal\n");
-  }
-
   // abrir queue
   printf("queue_handler: abrir queue\n");
   ma.mq_flags = 0;
@@ -172,39 +186,36 @@ void* queue_handler(void* pi) {
   while (STATUS_ON) {
     // receber game log
     printf("\nqueue_handler: pronto receber game log\n");
-    //TODO clock_gettime(CLOCK_REALTIME, &tm);
-    //TODO tm.tv_sec += 10;  // Set for 1 seconds
-    //TODO if (mq_timedreceive(mqids, (char*)&game_save, sizeof(game_save), NULL, &tm) < 0) {
-    if (mq_receive(mqids, (char*)&game_save, sizeof(game_save), NULL) < 0) {  //!! Implementar mq_timedreceive para poder ter uma clean exit (a função parece não existir)
+    if (mq_receive(mqids, (char*)&game_save, sizeof(game_save), NULL) < 0) {
       perror("queue_handler: erro a receber mensagem ou timeout");
     }
 
     pthread_mutex_lock(&file_mux);  //entering critical secttion
 
-    // abrir ficheiro com mmap e mapiá-lo a uma variável
-    open_file(&mfd, &tabel);
+    //! abrir ficheiro com mmap e mapiá-lo a uma variável
+    //open_file(&mfd, &tabel);
 
     // guardar o jogo na memória
     printf("queue_handler: guardar o jogo na memória\n");
     switch (game_save.nd)
     {
     case DIFF_1:
-      if (tabel->tb1_n_games >= TOPN) {
-        printf("queue_handler: tabela da dificuldade 1 cheia\n");
+      if (tabel_pt->tb1_n_games >= TOPN) {
+        printf("queue_handler: tabel_pta da dificuldade 1 cheia\n");
       }
       else {
-        tabel->tb1[tabel->tb1_n_games] = game_save; //guardar cópia
-        tabel->tb1_n_games++;
+        tabel_pt->tb1[tabel_pt->tb1_n_games] = game_save; //guardar cópia
+        tabel_pt->tb1_n_games++;
       }
       break;
 
     case DIFF_2:
-      if (tabel->tb2_n_games >= TOPN) {
+      if (tabel_pt->tb2_n_games >= TOPN) {
         printf("queue_handler: tabela da dificuldade 2 cheia\n");
       }
       else {
-        tabel->tb2[tabel->tb2_n_games] = game_save; //guardar cópia
-        tabel->tb2_n_games++;
+        tabel_pt->tb2[tabel_pt->tb2_n_games] = game_save; //guardar cópia
+        tabel_pt->tb2_n_games++;
       }
       break;
 
@@ -213,9 +224,9 @@ void* queue_handler(void* pi) {
       break;
     }
     printf("queue_handler: acabei de guardar jogo na memória\n");
-    // fechar ficheiro
-    munmap(tabel, MSIZE);
-    close(mfd);
+    //! fechar ficheiro
+    //munmap(tabel_pt, MSIZE);
+    //close(mfd);
     pthread_mutex_unlock(&file_mux);  //exiting critical secttion
   }
 
@@ -228,49 +239,51 @@ void* queue_handler(void* pi) {
 
 
 /***************************** open_file *******************************/
-void open_file(int* mfd_p, log_tabs_t** tabel_p) {
+//void open_file(int* mfd_p, log_tabs_t** tabel_p) {
+void open_file() {
   /* abrir / criar ficheiro */
-  if ((*mfd_p = open(FILE, O_RDWR | O_CREAT, 0666)) < 0) {
+  if ((mfd = open(FILE, O_RDWR | O_CREAT, 0666)) < 0) {
     perror("Erro a criar ficheiro");
     exit(-1);
   }
   else {
     /* definir tamanho do ficheiro */
-    if (ftruncate(*mfd_p, MSIZE) < 0) {
+    if (ftruncate(mfd, MSIZE) < 0) {
       perror("Erro no ftruncate");
       exit(-1);
     }
   }
   /* mapear ficheiro */
-  if ((*tabel_p = mmap(NULL, MSIZE, PROT_READ | PROT_WRITE, MAP_SHARED, *mfd_p, 0)) < (log_tabs_t*)0) {
+  if ((tabel_pt = mmap(NULL, MSIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mfd, 0)) < (log_tabs_t*)0) {
     perror("Erro em mmap");
     exit(-1);
   }
+  printf("Ficheiro de dados Aberto\n");
 }
 
 /***************************** get_tab_n *******************************/
 void get_tab_n(log_single_tab_t* single_tab, int diff) {
-  int mfd;
-  log_tabs_t* tabel;
+  //int mfd;
+  //log_tabs_t* tabel;
 
-  open_file(&mfd, &tabel);
+  //!open_file(&mfd, &tabel);
 
   switch (diff)
   {
   case DIFF_1:
-    for (int i = 0; i < tabel->tb1_n_games; i++) {
-      single_tab->tb[i] = tabel->tb1[i];
+    for (int i = 0; i < tabel_pt->tb1_n_games; i++) {
+      single_tab->tb[i] = tabel_pt->tb1[i];
     }
     single_tab->tb_diff = diff;
-    single_tab->tb_n_games = tabel->tb1_n_games;
+    single_tab->tb_n_games = tabel_pt->tb1_n_games;
     break;
 
   case DIFF_2:
-    for (int i = 0; i < tabel->tb2_n_games; i++) {
-      single_tab->tb[i] = tabel->tb2[i];
+    for (int i = 0; i < tabel_pt->tb2_n_games; i++) {
+      single_tab->tb[i] = tabel_pt->tb2[i];
     }
     single_tab->tb_diff = diff;
-    single_tab->tb_n_games = tabel->tb2_n_games;
+    single_tab->tb_n_games = tabel_pt->tb2_n_games;
     break;
 
   default:
@@ -283,21 +296,21 @@ void get_tab_n(log_single_tab_t* single_tab, int diff) {
 /***************************** del_tab_n *******************************/
 void del_tab_n(int diff) {
 
-  int mfd;
-  log_tabs_t* tabel;
+  //int mfd;
+  //log_tabs_t* tabel;
 
-  open_file(&mfd, &tabel);
+  //!open_file(&mfd, &tabel);
 
   switch (diff) {
   case DIFF_ALL:
-    tabel->tb1_n_games = 0;
-    tabel->tb2_n_games = 0;
+    tabel_pt->tb1_n_games = 0;
+    tabel_pt->tb2_n_games = 0;
     break;
   case DIFF_1:
-    tabel->tb1_n_games = 0;
+    tabel_pt->tb1_n_games = 0;
     break;
   case DIFF_2:
-    tabel->tb2_n_games = 0;
+    tabel_pt->tb2_n_games = 0;
     break;
 
   default:
