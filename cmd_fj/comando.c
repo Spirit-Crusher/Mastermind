@@ -13,8 +13,8 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#define DIMPLAY1 3
-#define DIMPLAY2 5
+#define DIMPLAY1 20
+#define DIMPLAY2 20
 #define CLINAME "/tmp/CLI"
 #define JMMLOGSD "/tmp/JMMLOGS"    /* nome do registo histórico (socket datagram) */
 #define JMMSERVSD "/tmp/JMMSERVSD" /* nome do servidor de jogo (socket datagram) */
@@ -149,6 +149,7 @@ void cmd_jg (int argc, char** argv){
   char xua;
   char dif1_play[DIMPLAY1];
   char dif2_play[DIMPLAY2];
+  char move[50];
 
   if(dif == 1){
     if(strlen(argv[1]) != 3){
@@ -157,15 +158,17 @@ void cmd_jg (int argc, char** argv){
     }
 
     strcpy(dif1_play, argv[1]);
-    for(aux = 0; aux < DIMPLAY1; aux++){
+    for(aux = 0; aux < strlen(dif1_play); aux++){
       xua = dif1_play[aux];
       if(!((xua == 'A') || (xua == 'B') || (xua == 'C') || (xua == 'D') || (xua == 'E'))){
+        printf("OLA!!!");
         printf("[ERRO] Repetir jogada! Introduzir 3 letras (de {ABCDE})");
         return;
       }
     }
 
-    if((write(sd_stream, argv[1], strlen(argv[1]) + 1) < 0)){
+    sprintf(move, "%s %s", argv[0], argv[1]);
+    if((write(sd_stream, move, strlen(move) + 1) < 0)){
       perror("[ERRO] Write para o servidor. Tentar novamente:\n");
       return;
     }else{
@@ -180,7 +183,7 @@ void cmd_jg (int argc, char** argv){
     }
 
     strcpy(dif2_play, argv[1]);
-    for(aux = 0; aux < DIMPLAY1; aux++){
+    for(aux = 0; aux < strlen(dif2_play); aux++){
       xua = dif2_play[aux];
       if(!((xua == 'A') || (xua == 'B') || (xua == 'C') || (xua == 'D') || (xua == 'E') || (xua == 'F') || (xua == 'G') || (xua == 'H'))){
         printf("[ERRO] Repetir jogada! Introduzir 5 letras (de {ABCDEFGH})");
@@ -188,7 +191,8 @@ void cmd_jg (int argc, char** argv){
       }
     }
 
-    if((write(sd_stream, argv[1], strlen(argv[1]) + 1) < 0)){
+    sprintf(move, "%s %s", argv[0], argv[1]);
+    if((write(sd_stream, move, strlen(move) + 1) < 0)){
       perror("[ERRO] Write para o servidor. Tentar novamente:\n");
       return;
     }else{
