@@ -159,7 +159,7 @@ void cmd_jg (int argc, char** argv){
     strcpy(dif1_play, argv[1]);
     for(aux = 0; aux < DIMPLAY1; aux++){
       xua = dif1_play[aux];
-      if((xua != 'A') || (xua != 'B') || (xua != 'C') || (xua != 'D') || (xua != 'E')){
+      if(!((xua == 'A') || (xua == 'B') || (xua == 'C') || (xua == 'D') || (xua == 'E'))){
         printf("[ERRO] Repetir jogada! Introduzir 3 letras (de {ABCDE})");
         return;
       }
@@ -182,7 +182,7 @@ void cmd_jg (int argc, char** argv){
     strcpy(dif2_play, argv[1]);
     for(aux = 0; aux < DIMPLAY1; aux++){
       xua = dif2_play[aux];
-      if((xua != 'A') || (xua != 'B') || (xua != 'C') || (xua != 'D') || (xua != 'E') || (xua != 'F') || (xua != 'G') || (xua != 'H')){
+      if(!((xua == 'A') || (xua == 'B') || (xua == 'C') || (xua == 'D') || (xua == 'E') || (xua == 'F') || (xua == 'G') || (xua == 'H'))){
         printf("[ERRO] Repetir jogada! Introduzir 5 letras (de {ABCDEFGH})");
         return;
       }
