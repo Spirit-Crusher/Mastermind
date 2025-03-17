@@ -97,7 +97,7 @@ void test_datagram_ltc() {
     socklen_t tolen;
 
     //rjg_t game_save;
-    log_single_tab_t msg_tab_recieved;;
+    log_single_tab_t msg_tab_recieved;
 
     if ((socket_d = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0) {
         perror("Erro a criar socket"); exit(-1);
@@ -119,7 +119,7 @@ void test_datagram_ltc() {
     memset(to.sun_path, 0, sizeof(to.sun_path));
     strcpy(to.sun_path, JMMLOGSD);
     tolen = sizeof(my_addr.sun_family) + strlen(to.sun_path);
-    msg_to_JMMlog msg_sent = { .cmd = "ltc", .arg_n = DIFF_ALL }; ////////////////////! aqui
+    msg_to_JMMlog msg_sent = { .cmd = "ltc", .arg_n = DIFF_1 }; ////////////////////! aqui
     if (sendto(socket_d, &msg_sent, sizeof(msg_sent), 0, (struct sockaddr*)&to, tolen) < 0) {
         perror("teste: Erro no sendto");
     }
@@ -232,8 +232,8 @@ void test_datagram_trh() {
 int main() {
     //test_datagram_ltc();
     //test_datagram_rtc();
-    //test_datagram_trh();
-    int verbose = 0; queue_test_add_game(verbose);
+    test_datagram_trh();
+    //int verbose = 0; queue_test_add_game(verbose);
     //int verbose = 1; test_print_memory(verbose);
 
 
