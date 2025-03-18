@@ -34,7 +34,23 @@ socklen_t addrlen_d;
 struct sockaddr_un to_d;
 struct sockaddr_un my_addr_d;
 
+typedef enum 
+{
+  CNJ,
+  JG,
+  CLM,
+} commands_t;
 
+typedef struct
+{
+  commands_t command;
+  unsigned short int n;
+  char Name[4];
+  char move[6];
+  unsigned int j;
+  time_t t;
+
+} coms;
 
 /*-------------------------------------------------------------------------+
 | Function: cmd_sair - termina a aplicacao
