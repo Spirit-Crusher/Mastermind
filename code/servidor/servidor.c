@@ -9,6 +9,8 @@ pthread_t thread_gameinstance[NJMAX]; //acho que isto pode ser local ao middlema
 game_t* game_instances[NJMAX] = {0}; //maybe pode ser removido, confirmar
 sem_t sem_mm, sem_handler, sem_create, sem1, sem2, sem3, sem4;
 int sd_global = 0;
+struct sockaddr_un addr;
+socklen_t addrlen;
 
 
 //inicialização do jogo
@@ -90,7 +92,7 @@ void* thread_func_gameinstance(void* arg)
                 printf("[ERRO] Game number inválido: %d\n", game_number);
                 exit(-1);
         }
-        strcpy(current_game->player_move, &buffer_stream.arg1.move);
+        strcpy(current_game->player_move, buffer_stream.arg1.move);
         printf("Move: %s \n Correct move: %s\n", current_game->player_move, current_game->correct_sequence);
         state = analise_move(current_game);
         printf("Gamestate = %d\n", state);
@@ -129,8 +131,6 @@ void* thread_func_middleman()
 //talvez dê para comprimir writes da função 
 void stream_handler(int socket_descriptor)
 {
-    int game_number = -1;
-    char result[strlen(MOVE_REGISTERED)+8+1];
 
     switch (buffer_stream.command)
     {
@@ -150,6 +150,9 @@ void stream_handler(int socket_descriptor)
 
         case JG:
             //enviar jogada associada ao socket de onde foi recebida stream para a thread de jogo adequada
+            int game_number = -1;
+            char result[strlen(MOVE_REGISTERED)+8+1];
+
             for (int i = 0; i < NJMAX; ++i)
             {
                 if ((game_instances[i] != NULL) && (game_instances[i]->sd == socket_descriptor))
