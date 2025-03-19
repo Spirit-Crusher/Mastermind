@@ -42,6 +42,17 @@ typedef enum
     PLAYER_LOST,
 } game_state_t;
 
+typedef enum 
+{
+  CNJ,
+  JG,
+  CLM,
+  MLM,
+  CER,
+  AER,
+  DER,
+  TMM,
+} commands_t;
 
 /****************** Structs *******************/
 typedef struct
@@ -69,6 +80,25 @@ typedef struct // variável de estado do jogo
     socklen_t addr_len; //comprimento do address
 } game_t;
 
+typedef struct
+{
+  commands_t command;
+
+  union
+  {
+    char Name[4];
+    char move[6];
+    unsigned int j;
+    unsigned short int n;
+  } arg1;
+  
+  union
+  {
+    unsigned short int n;
+    time_t t;
+  } arg2;
+
+} coms_t;
 
 /***************************  Fuctions ***************************/
 game_state_t analise_move(game_t *game_pt);

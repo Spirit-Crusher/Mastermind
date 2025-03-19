@@ -4,6 +4,8 @@
 | Autor: Carlos Almeida (IST)
 | Data:  Nov 2002
 ***************************************************************************/
+#pragma pack(1)
+
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -39,18 +41,32 @@ typedef enum
   CNJ,
   JG,
   CLM,
+  MLM,
+  CER,
+  AER,
+  DER,
+  TMM,
 } commands_t;
 
 typedef struct
 {
   commands_t command;
-  unsigned short int n;
-  char Name[4];
-  char move[6];
-  unsigned int j;
-  time_t t;
 
-} coms;
+  union
+  {
+    char Name[4];
+    char move[6];
+    unsigned int j;
+    unsigned short int n;
+  } arg1;
+
+  union
+  {
+    unsigned short int n;
+    time_t t;
+  } arg2;
+
+} coms_t;
 
 /*-------------------------------------------------------------------------+
 | Function: cmd_sair - termina a aplicacao
