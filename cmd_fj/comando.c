@@ -24,7 +24,7 @@
 
 
 // VARIÁVEIS GLOBAIS
-int dif;
+unsigned short int dif;
 
 int sd_stream;                    // file descriptor do socket stream
 socklen_t addrlen_s;
@@ -36,8 +36,7 @@ socklen_t addrlen_d;
 struct sockaddr_un to_d;
 struct sockaddr_un my_addr_d;
 
-typedef enum 
-{
+typedef enum {
   CNJ,
   JG,
   CLM,
@@ -46,27 +45,27 @@ typedef enum
   AER,
   DER,
   TMM,
+  LTC,
+  RTC,
+  TRH
 } commands_t;
 
-typedef struct
-{
+typedef struct {
   commands_t command;
 
-  union
-  {
-    char Name[4];
+  union {
+    char name[4];
     char move[6];
     unsigned int j;
     unsigned short int n;
   } arg1;
 
-  union
-  {
+  union {
     unsigned short int n;
     time_t t;
   } arg2;
-
 } coms_t;
+
 
 /*-------------------------------------------------------------------------+
 | Function: cmd_sair - termina a aplicacao
@@ -87,24 +86,22 @@ void cmd_cnj (int argc, char** argv){
   char buf_s[50];
   char buf_d[50];
   char new_game[9];
+  coms_t coms_msg;         // struct para realizar o envio dos comandos para o servidor
   
   if(argc != 3){    // comando + nome + dificuldade
     printf("[ERRO] Número de argumentos inválido\n");
     return;     // volta para a "linha de comandos"
   }
+
   if(strlen(argv[1]) != 3){     // nome com 3 chars
     printf("\n\n[ERRO] Nome inválido! Introduzir no máximo 3 caracteres.\n\n");
     return;     // volta para a "linha de comandos"
   }else{
-    dif = atoi(argv[2]);
-    if((dif == 1) || (dif == 2)){     // dificuldade: 1 ou 2
-    /*-----------------------criar-socket-stream------------------------*/
-      if((sd_stream = socket(AF_UNIX, SOCK_STREAM, 0)) < 0 ){  // tenta criar socket
-        perror("[ERRO] Criação de socket stream falhou. Tentar novamente:\n"); 
-        return;     // volta para a "linha de comandos"
-      }
+    if((atoi(argv[2]) > 0.5) && (atoi(argv[2]) < 2.5)){
+      dif = atoi(argv[2]);
 
-      if((sd_stream = socket(AF_UNIX, SOCK_STREAM, 0)) < 0 ){
+      /*-----------------------criar-socket-stream------------------------*/
+      if((sd_stream = socket(AF_UNIX, SOCK_STREAM, 0)) < 0 ){  // tenta criar socket
         perror("[ERRO] Criação de socket stream falhou. Tentar novamente:\n"); 
         return;     // volta para a "linha de comandos"
       }
@@ -119,8 +116,10 @@ void cmd_cnj (int argc, char** argv){
         return;     // volta para a "linha de comandos"
       }
       
-      sprintf(new_game, "%s %s %s", argv[0], argv[1], argv[2]);
-      if((write(sd_stream, new_game, strlen(new_game) + 1) < 0)){
+      coms_msg.command = CNJ; coms_msg.arg2.n = dif;
+      strcpy(coms_msg.arg1.name, argv[1]);
+      
+      if((write(sd_stream, &coms_msg, sizeof(coms_msg)) < 0)){
         perror("[ERRO] Write para o servidor. Tentar novamente:\n");
         close(sd_stream);
         return;     // volta para a "linha de comandos"
@@ -177,11 +176,11 @@ void cmd_cnj (int argc, char** argv){
 | Function: cmd_jg - fazer jogada
 +--------------------------------------------------------------------------*/
 void cmd_jg (int argc, char** argv){
-  int aux;
+  unsigned short int aux;
   char xua;
-  char dif1_play[DIMPLAY1];
-  char dif2_play[DIMPLAY2];
-  char move[50];
+  char val1_play[DIMPLAY1];
+  char val2_play[DIMPLAY2];
+  coms_t cmd_msg;
 
   if(dif == 1){
     if(strlen(argv[1]) != 3){
@@ -189,47 +188,49 @@ void cmd_jg (int argc, char** argv){
       return;
     }
 
-    strcpy(dif1_play, argv[1]);
-    for(aux = 0; aux < strlen(dif1_play); aux++){
-      xua = dif1_play[aux];
+    strcpy(val1_play, argv[1]);
+    for(aux = 0; aux < strlen(val1_play); aux++){
+      xua = val1_play[aux];
       if(!((xua == 'A') || (xua == 'B') || (xua == 'C') || (xua == 'D') || (xua == 'E'))){
-        printf("OLA!!!");
+        // printf("OLA!!!");
         printf("[ERRO] Repetir jogada! Introduzir 3 letras (de {ABCDE})");
         return;
       }
     }
 
-    sprintf(move, "%s %s", argv[0], argv[1]);
-    if((write(sd_stream, move, strlen(move) + 1) < 0)){
+    cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);
+
+    if((write(sd_stream, &cmd_msg, sizeof(cmd_msg)) < 0)){
       perror("[ERRO] Write para o servidor. Tentar novamente:\n");
       return;
     }else{
-      while(read(sd_stream, dif1_play, sizeof(dif1_play)) < 0);
-      printf("[INFO] Jogada: %s\n", dif1_play);      
+      while(read(sd_stream, val1_play, sizeof(val1_play)) < 0);       // espera até receber
+      printf("[INFO] Jogada: %s\n", val1_play);                       // jogada
     }
   }
   if(dif == 2){
     if(strlen(argv[1]) != 5){
-      printf("[ERRO] Repetir jogada! Introduzir 3 letras (de {ABCDE})");
+      printf("[ERRO] Repetir jogada! Introduzir 5 letras (de {ABCDEFGH})");
       return;
     }
 
-    strcpy(dif2_play, argv[1]);
-    for(aux = 0; aux < strlen(dif2_play); aux++){
-      xua = dif2_play[aux];
+    strcpy(val2_play, argv[1]);
+    for(aux = 0; aux < strlen(val2_play); aux++){
+      xua = val2_play[aux];
       if(!((xua == 'A') || (xua == 'B') || (xua == 'C') || (xua == 'D') || (xua == 'E') || (xua == 'F') || (xua == 'G') || (xua == 'H'))){
         printf("[ERRO] Repetir jogada! Introduzir 5 letras (de {ABCDEFGH})");
         return;
       }
     }
 
-    sprintf(move, "%s %s", argv[0], argv[1]);
-    if((write(sd_stream, move, strlen(move) + 1) < 0)){
+    cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);
+
+    if((write(sd_stream, &cmd_msg, sizeof(cmd_msg)) < 0)){
       perror("[ERRO] Write para o servidor. Tentar novamente:\n");
       return;
     }else{
-      while(read(sd_stream, dif2_play, sizeof(dif2_play)) < 0);
-      printf("[INFO] Jogada: %s\n", dif2_play);      
+      while(read(sd_stream, val2_play, sizeof(val2_play)) < 0);
+      printf("[INFO] Jogada: %s\n", val2_play);      
     }
   }
 }
