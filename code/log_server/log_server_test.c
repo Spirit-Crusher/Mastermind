@@ -68,7 +68,7 @@ void test_print_memory(int verbose) {
 
 void queue_test_add_game(int verbose) {
     int mqids;
-    rjg_t game_save = { .nd = DIFF_2, .nj = "T-2", .nt = 3, .tf = 90, .ti = 1 };
+    rjg_t game_save = { .nd = DIFF_2, .nj = "T-2", .nt = 3, .tf = 1, .ti = 00 };
 
     if ((mqids = mq_open(JMMLOGQ, O_RDWR)) < 0) {
         perror("Cliente: Erro a associar a queue servidor");
@@ -96,7 +96,6 @@ void test_datagram_ltc() {
     struct sockaddr_un to;
     socklen_t tolen;
 
-    //rjg_t game_save;
     log_single_tab_t msg_tab_recieved;
 
     if ((socket_d = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0) {
@@ -157,9 +156,6 @@ void test_datagram_rtc() {
     struct sockaddr_un to;
     socklen_t tolen;
 
-    //rjg_t game_save;
-    //log_single_tab_t msg_tab_recieved;;
-
     if ((socket_d = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0) {
         perror("Erro a criar socket"); exit(-1);
     }
@@ -197,9 +193,6 @@ void test_datagram_trh() {
     struct sockaddr_un to;
     socklen_t tolen;
 
-    //rjg_t game_save;
-    //log_single_tab_t msg_tab_recieved;;
-
     if ((socket_d = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0) {
         perror("Erro a criar socket"); exit(-1);
     }
@@ -228,12 +221,40 @@ void test_datagram_trh() {
     unlink("CLINAME");
 }
 
+void print_table(const log_tabs_t *log, int table_id) {
+    const rjg_t *table;
+    int n_games;
+
+    // Selecionar a tabela correta
+    if (table_id == 1) {
+        table = log->tb1;
+        n_games = log->tb1_n_games;
+        printf("\n=== Jogos tb1 (Ordenados por duração) ===\n");
+    } else if (table_id == 2) {
+        table = log->tb2;
+        n_games = log->tb2_n_games;
+        printf("\n=== Jogos tb2 (Ordenados por duração) ===\n");
+    } else {
+        printf("Erro: tabela inválida (use 1 ou 2)\n");
+        return;
+    }
+
+    // Imprimir jogos da tabela
+    for (int i = 0; i < n_games; i++) {
+        const rjg_t *game = &table[i];
+        printf("Jogo %d: %s | Dificuldade: %d | Tentativas: %d | Duração: %ld segundos\n",
+               i + 1, game->nj, game->nd, game->nt, game->tf - game->ti);
+    }
+    printf("========================================\n");
+}
+
+
 
 int main() {
     //test_datagram_ltc();
     //test_datagram_rtc();
-    test_datagram_trh();
-    //int verbose = 0; queue_test_add_game(verbose);
+    //test_datagram_trh();
+    int verbose = 1; queue_test_add_game(verbose);
     //int verbose = 1; test_print_memory(verbose);
 
 

@@ -187,35 +187,7 @@ void* queue_handler() {
     pthread_mutex_lock(&file_mux);  //entering critical secttion
     // guardar o jogo na memória
     printf("queue_handler: guardar o jogo na memória\n");
-    //!!!!!!!!! por isto numa função à parte para pôr pur ordem
-    /*
-    switch (game_save.nd)
-    {
-    case DIFF_1:
-      if (tabel_pt->tb1_n_games >= TOPN) {
-        printf("queue_handler: tabel_pta da dificuldade 1 cheia\n");
-      }
-      else {
-        tabel_pt->tb1[tabel_pt->tb1_n_games] = game_save; //guardar cópia
-        tabel_pt->tb1_n_games++;
-      }
-      break;
-
-    case DIFF_2:
-      if (tabel_pt->tb2_n_games >= TOPN) {
-        printf("queue_handler: tabela da dificuldade 2 cheia\n");
-      }
-      else {
-        tabel_pt->tb2[tabel_pt->tb2_n_games] = game_save; //guardar cópia
-        tabel_pt->tb2_n_games++;
-      }
-      break;
-
-    default:
-      printf("queue_handler: difficuldade inválida\n");
-      break;
-    } */
-
+    insert_sorted_n(tabel_pt, game_save, game_save.nd);
     printf("queue_handler: acabei de guardar jogo na memória\n");
     pthread_mutex_unlock(&file_mux);  //exiting critical secttion
   }
@@ -252,6 +224,54 @@ void open_file() {
   }
   printf("Ficheiro de dados Aberto\n");
 }
+
+/***************************** insert_sorted_n *******************************/
+void insert_sorted_n(log_tabs_t* log, rjg_t new_game, game_diff_t diff) {
+  rjg_t* table;
+  int* n_games;
+
+  // Selecionar a tabela correta
+  if (diff == 1) {
+    table = log->tb1;
+    n_games = &log->tb1_n_games;
+  }
+  else if (diff == 2) {
+    table = log->tb2;
+    n_games = &log->tb2_n_games;
+  }
+  else {
+    printf("Erro: tabela inválida (use 1 ou 2)\n");
+    return;
+  }
+
+  if (*n_games >= TOPN) {
+    printf("Erro: tabela %d está cheia!\n", diff);
+    return;
+  }
+
+  int duration_new = new_game.tf - new_game.ti;
+  int i = *n_games;
+
+  // Encontrar posição correta para inserir
+  while (i > 0) {
+    int nt_current = table[i - 1].nt;
+    int duration_current = table[i - 1].tf - table[i - 1].ti;
+
+    // Ordem principal: Menos tentativas primeiro
+    // Desempate: Menor duração primeiro
+    if (nt_current < new_game.nt || (nt_current == new_game.nt && duration_current <= duration_new)) {
+      break;
+    }
+
+    table[i] = table[i - 1];  // Desloca os elementos para frente
+    i--;
+  }
+
+  // Insere o novo jogo na posição correta
+  table[i] = new_game;
+  (*n_games)++;
+}
+
 
 /***************************** get_tab_n *******************************/
 void get_tab_n(log_single_tab_t* single_tab, int diff) {

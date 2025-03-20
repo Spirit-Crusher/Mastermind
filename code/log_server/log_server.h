@@ -49,6 +49,10 @@ void* queue_handler();
 //void open_file(int* mfd_p, log_tabs_t** tabel_p);
 void open_file();
 
+
+//TODO -> descrição.. Função para inserir um rjg_t em tb1 ou tb2 ordenado por duração do jogo
+void insert_sorted_n(log_tabs_t *log, rjg_t new_game, game_diff_t diff);
+
 /* get_tab_n
 * @return: single_tab -> estrutura com uma tabela de dificuldades inteira
 * @arg: diff -> dificuldade da estrutura supracitada
