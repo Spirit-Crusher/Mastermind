@@ -198,9 +198,9 @@ void stream_handler(int socket_descriptor)
             }
             break;
         
-        default:
-            printf("[ERRO] Lixo no buffer stream.\n");
-            break;
+        //default:
+        //    printf("[ERRO] Lixo no buffer stream.\n");
+        //    break;
     }
 
     return;
