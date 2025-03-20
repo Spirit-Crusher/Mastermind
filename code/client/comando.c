@@ -37,10 +37,24 @@ struct sockaddr_un to_d;
 struct sockaddr_un my_addr_d;
 
 typedef enum {
+<<<<<<< Updated upstream:code/client/comando.c
   CNJ, JG, CLM,
   MLM, CER, AER,
   DER, TMM, LTC,
   RTC, TRH
+=======
+  CNJ,
+  JG,
+  CLM,
+  MLM,
+  CER,
+  AER,
+  DER,
+  TMM,
+  LTC,
+  RTC,
+  TRH
+>>>>>>> Stashed changes:cmd_fj/comando.c
 } commands_t;
 
 typedef struct {
@@ -191,7 +205,11 @@ void cmd_jg (int argc, char** argv){
       }
     }
 
+<<<<<<< Updated upstream:code/client/comando.c
     cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);         // atribui dados a enviar, na estrutura de dados
+=======
+    cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);
+>>>>>>> Stashed changes:cmd_fj/comando.c
 
     if((write(sd_stream, &cmd_msg, sizeof(cmd_msg)) < 0)){
       perror("[ERRO] Write para o servidor. Tentar novamente:\n");

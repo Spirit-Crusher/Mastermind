@@ -200,11 +200,16 @@ void stream_handler(int socket_descriptor)
         
         //default:
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         //    printf("[ERRO] Lixo no buffer stream.\n");
         //    break;
 =======
           //  printf("[ERRO] Lixo no buffer stream.\n");
             //break;
+>>>>>>> Stashed changes
+=======
+        //    printf("[ERRO] Lixo no buffer stream.\n");
+        //    break;
 >>>>>>> Stashed changes
     }
 
