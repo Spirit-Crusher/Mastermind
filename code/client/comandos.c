@@ -37,12 +37,14 @@ socklen_t addrlen_d;
 struct sockaddr_un to_d;
 struct sockaddr_un my_addr_d;
 
+
 typedef enum {
   CNJ, JG, CLM,
   MLM, CER, AER,
   DER, TMM, LTC,
   RTC, TRH
 } commands_t;
+
 
 typedef struct {
   commands_t command;
@@ -59,6 +61,32 @@ typedef struct {
     time_t t;
   } arg2;
 } coms_t;
+
+
+typedef enum{
+    DIFF_ALL,
+    DIFF_1,
+    DIFF_2,
+} game_diff_t;
+
+typedef struct {            /* estrutura de um registo de jogo */
+    int nd;                 /* nível de dificuldade do jogo */
+    char nj[4];             /* nome do jogador (3 carateres) */
+    int nt;                 /* número de tentativas usadas */
+    time_t ti;              /* estampilha temporal início do jogo */
+    time_t tf;              /* estampilha temporal fim do jogo */
+} rjg_t;
+
+typedef struct {
+  rjg_t tb[10];
+  int tb_n_games;
+  int tb_diff;
+} log_single_tab_t;
+
+typedef struct {
+  char cmd[5];               // tamanho máximo dos comandos é 4
+  int arg_n;                 // valor do argumento "n"
+} msg_to_JMMlog;
 
 
 /*-------------------------------------------------------------------------+
@@ -383,7 +411,71 @@ void cmd_tmm (int argc, char** argv){
 | Function: cmd_ltc - listar classificações
 +--------------------------------------------------------------------------*/
 void cmd_ltc (int argc, char** argv){
-  printf("1");
+  log_single_tab_t msg_tab_recieved;
+  msg_to_JMMlog msg_sent;
+
+  struct sockaddr_un my_addr;
+  struct sockaddr_un to;
+  socklen_t tolen;
+
+  if((argc == 2) && (atoi(argv[1]) > 0) && (atoi(argv[1]) <= 2)){
+    to.sun_family = AF_UNIX;
+    memset(to.sun_path, 0, sizeof(to.sun_path));
+    strcpy(to.sun_path, JMMLOGSD);
+    tolen = sizeof(my_addr.sun_family) + strlen(to.sun_path);
+
+    strcpy(msg_sent.cmd, "ltc");
+
+    if(atoi(argv[1]) == 0)
+      msg_sent.arg_n = DIFF_ALL;
+    else if(atoi(argv[1]) == 1)
+      msg_sent.arg_n = DIFF_1;
+    else if(atoi(argv[1]) == 2)
+      msg_sent.arg_n = DIFF_2;
+    else
+      printf("[ERRO INESPERADO]");
+
+    if (sendto(sd_datagram, &msg_sent, sizeof(msg_sent), 0, (struct sockaddr*)&to, tolen) < 0) {
+      perror("teste: Erro no sendto");
+    }else{
+      switch (msg_sent.arg_n){
+        
+        case DIFF_ALL:
+          if(recvfrom(sd_datagram, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&to, &tolen) < 0)
+            perror("teste: Erro no recvfrom");
+          else
+            printf("teste: Recebi: diff=%i n_games=%i\n", msg_tab_recieved.tb_diff, msg_tab_recieved.tb_n_games);
+          
+          if(recvfrom(sd_datagram, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&to, &tolen) < 0)
+            perror("teste: Erro no recvfrom");
+          else
+            printf("teste: Recebi: diff=%i n_games=%i\n", msg_tab_recieved.tb_diff, msg_tab_recieved.tb_n_games);
+          break;
+
+        case DIFF_1:
+          if(recvfrom(sd_datagram, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&to, &tolen) < 0)
+            perror("teste: Erro no recvfrom");
+          else
+            printf("teste: Recebi: diff=%i n_games=%i\n", msg_tab_recieved.tb_diff, msg_tab_recieved.tb_n_games);
+          break;
+
+        case DIFF_2:
+          if(recvfrom(sd_datagram, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&to, &tolen) < 0)
+            perror("teste: Erro no recvfrom");
+          else
+            printf("teste: Recebi: diff=%i n_games=%i\n", msg_tab_recieved.tb_diff, msg_tab_recieved.tb_n_games);
+          break;
+
+        default:
+          printf("[ERRO] INESPERADO");
+          return;
+
+      }
+    }
+  }else{
+    printf("[ERRO] Número inválido de argumentos. Tentar Novamente. \n");
+    return;
+  }
 }
 /*-------------------------------------------------------------------------*/
 
@@ -391,8 +483,72 @@ void cmd_ltc (int argc, char** argv){
 /*-------------------------------------------------------------------------+
 | Function: cmd_rtc - reiniciar tabelas de classificação
 +--------------------------------------------------------------------------*/
-void cmd_rtc (int argc, char** argv){
-  printf("1");
+void cmd_rtc(int argc, char** argv){
+  log_single_tab_t msg_tab_recieved;
+  msg_to_JMMlog msg_sent;
+
+  struct sockaddr_un my_addr;
+  struct sockaddr_un to;
+  socklen_t tolen;
+
+  if((argc == 2) && (atoi(argv[1]) > 0) && (atoi(argv[1]) <= 2)){
+    to.sun_family = AF_UNIX;
+    memset(to.sun_path, 0, sizeof(to.sun_path));
+    strcpy(to.sun_path, JMMLOGSD);
+    tolen = sizeof(my_addr.sun_family) + strlen(to.sun_path);
+
+    strcpy(msg_sent.cmd, "ltc");
+
+    if(atoi(argv[1]) == 0)
+      msg_sent.arg_n = DIFF_ALL;
+    else if(atoi(argv[1]) == 1)
+      msg_sent.arg_n = DIFF_1;
+    else if(atoi(argv[1]) == 2)
+      msg_sent.arg_n = DIFF_2;
+    else
+      printf("[ERRO INESPERADO]");
+
+    if(sendto(sd_datagram, &msg_sent, sizeof(msg_sent), 0, (struct sockaddr*)&to, tolen) < 0) {
+      perror("teste: Erro no sendto");
+    }else{
+      switch (msg_sent.arg_n){
+        
+        case DIFF_ALL:
+          if(recvfrom(sd_datagram, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&to, &tolen) < 0)
+            perror("teste: Erro no recvfrom");
+          else
+            printf("teste: Recebi: diff=%i n_games=%i\n", msg_tab_recieved.tb_diff, msg_tab_recieved.tb_n_games);
+          
+          if(recvfrom(sd_datagram, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&to, &tolen) < 0)
+            perror("teste: Erro no recvfrom");
+          else
+            printf("teste: Recebi: diff=%i n_games=%i\n", msg_tab_recieved.tb_diff, msg_tab_recieved.tb_n_games);
+          break;
+
+        case DIFF_1:
+          if(recvfrom(sd_datagram, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&to, &tolen) < 0)
+            perror("teste: Erro no recvfrom");
+          else
+            printf("teste: Recebi: diff=%i n_games=%i\n", msg_tab_recieved.tb_diff, msg_tab_recieved.tb_n_games);
+          break;
+
+        case DIFF_2:
+          if(recvfrom(sd_datagram, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&to, &tolen) < 0)
+            perror("teste: Erro no recvfrom");
+          else
+            printf("teste: Recebi: diff=%i n_games=%i\n", msg_tab_recieved.tb_diff, msg_tab_recieved.tb_n_games);
+          break;
+
+        default:
+          printf("[ERRO] INESPERADO");
+          return;
+
+      }
+    }
+  }else{
+    printf("[ERRO] Número inválido de argumentos. Tentar Novamente. \n");
+    return;
+  }
 }
 /*-------------------------------------------------------------------------*/
 
@@ -409,7 +565,7 @@ void cmd_trh (int argc, char** argv){
 
 
 
-
+/*+++++++++++++++++++++++++++previously_provided++++++++++++++++++++++++++*/
 
 /*-------------------------------------------------------------------------+
 | Function: cmd_test - função de teste: apenas como exemplo
