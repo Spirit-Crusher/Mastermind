@@ -6,7 +6,8 @@ char buffer_stream[100], buffer_dgram[100]; //posso usar só 1 buffer com mutex 
 pthread_t thread_middleman;
 pthread_t thread_gameinstance[NJMAX]; //acho que isto pode ser local ao middleman
 game_t* game_instances[NJMAX] = {0}; //maybe pode ser removido, confirmar
-sem_t sem_mm, sem_handler, sem1, sem2, sem3, sem4;
+sem_t sem_mm, sem_handler, sem_create, sem1, sem2, sem3, sem4;
+int sd_global = 0;
 
 
 //inicialização do jogo
@@ -19,7 +20,7 @@ void create_new_game(game_t* game, int game_number)
     game->log.nt = 0;
     game->log.ti = time(NULL);
     game->log.tf = NO_TIME_REGISTERED; //inicializei com alguma coisa para conseguir perceber se der problemas
-    game->n_char = 4;
+    game->n_char = 3;
     game->nt_max = 3; 
     
     //game->player_move = "0000"; desnecessário (provavelmente), also tem de ser com strcpy
@@ -29,6 +30,7 @@ void create_new_game(game_t* game, int game_number)
     game->game_state = ONGOING;
 
     //inicializar novas vars que criei
+    game->sd = sd_global;
 
     printf("[INFO] Init do jogo funcionou\n");
 
@@ -52,6 +54,7 @@ void* thread_func_gameinstance(void* arg)
 
     create_new_game(current_game, game_number);
     printf("[INFO] Jogo nº%d foi iniciado\n", game_number);
+    sem_post(&sem_create);
 
     while (state == ONGOING)
     {
@@ -78,12 +81,14 @@ void* thread_func_gameinstance(void* arg)
                 exit(-1);
         }
         strcpy(current_game->player_move, &buffer_stream[3]);
+        printf("Move: %s \n Correct move: %s\n", current_game->player_move, current_game->correct_sequence);
         state = analise_move(current_game);
+        printf("Gamestate = %d\n", state);
         sem_post(&sem_handler);
     }
 
-
     free(current_game);
+    return NULL;
 }
 
 void* thread_func_middleman()
@@ -120,10 +125,11 @@ void stream_handler(int socket_descriptor)
     if(!strncmp(buffer_stream, "cnj", 3))
     {
         printf("[INFO] SERVER_STREAM: O jogador com descriptor %d deseja começar um novo jogo: %s\n", socket_descriptor, buffer_stream);
+        sd_global = socket_descriptor;
         
         //ATIVAR MIDDLEMAN
         sem_post(&sem_mm);
-
+        sem_wait(&sem_create);
         //enviar mensagem ao jogador para lhe confirmar que request foi aceite
         if(write(socket_descriptor, GAME_ACCEPTED, strlen(GAME_ACCEPTED)+1) < 0)    
         {
@@ -133,30 +139,31 @@ void stream_handler(int socket_descriptor)
     else if(!strncmp(buffer_stream, "jg", 2))
     {
         //enviar jogada associada ao socket de onde foi recebida stream para a thread de jogo adequada
-
         for (int i = 0; i < NJMAX; ++i)
         {
-            if (game_instances[i]->sd == socket_descriptor)
+            if ((game_instances[i] != NULL) && (game_instances[i]->sd == socket_descriptor))
             {
                 game_number = i;
+                break;
             }
+            else printf("Não é o game number nº%d\n", i);
         }
 
         switch (game_number)
         {
-            case 1:
+            case 0:
                 sem_post(&sem1);
                 break;
             
-            case 2:
+            case 1:
                 sem_post(&sem2);
                 break;
 
-            case 3:
+            case 2:
                 sem_post(&sem3);
                 break;
 
-            case 4:
+            case 3:
                 sem_post(&sem4);
                 break;
 
@@ -170,6 +177,7 @@ void stream_handler(int socket_descriptor)
         //enviar mensagem ao jogador para lhe mostrar resultado da jogada
         sem_wait(&sem_handler);
         sprintf(result, "nb:%d np:%d", game_instances[game_number]->nb, game_instances[game_number]->np);
+        printf("Resultado da jogada: %s\n", result);
         if(write(socket_descriptor, result, strlen(result)+1) < 0)    
         {
             perror("[ERRO] Erro no envio de stream");
@@ -177,7 +185,7 @@ void stream_handler(int socket_descriptor)
     }
     else
     {
-        printf("[ERRO] Lixo no buffer stream\n");
+        printf("[ERRO] Lixo no buffer stream: %s\n", buffer_stream);
     }
 }
 
@@ -368,7 +376,7 @@ game_state_t analise_move(game_t *game_pt)
     {
         if (game_pt->correct_sequence[i] == game_pt->player_move[i])
         {
-            (np)++;
+            np++;
             used_secret[i] = true;
             used_guess[i] = true;
         }
@@ -425,6 +433,10 @@ int main() {
     if(sem_init(&sem_handler, 0, 0) != 0)
     {
         perror("[ERRO] Criação do semáforo handler falhou");
+    }
+    if(sem_init(&sem_create, 0, 0) != 0)
+    {
+        perror("[ERRO] Criação do semáforo mm falhou");
     }
     if(sem_init(&sem1, 0, 0) != 0)
     {
