@@ -25,6 +25,8 @@ log_server/MMJ_log.exe: log_server/log_server.o log_server/log_server.h include/
 #	$(CC) $^ -o $@
 	cd ./log_server && make
 
+
+
 # app server
 #run_s: ./servidor/MMJ_server.exe
 #	./servidor/MMJ_server.exe
