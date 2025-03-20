@@ -7,13 +7,14 @@
 #pragma pack(1)
 
 #include <stdio.h>
+#include <stdbool.h>
+#include <string.h>
+#include <stdlib.h>
+#include <errno.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <string.h>
-#include <stdlib.h>
-#include <errno.h>
 
 #define DIMPLAY1 20
 #define DIMPLAY2 20
@@ -37,29 +38,15 @@ struct sockaddr_un to_d;
 struct sockaddr_un my_addr_d;
 
 typedef enum {
-<<<<<<< Updated upstream:code/client/comando.c
   CNJ, JG, CLM,
   MLM, CER, AER,
   DER, TMM, LTC,
   RTC, TRH
-=======
-  CNJ,
-  JG,
-  CLM,
-  MLM,
-  CER,
-  AER,
-  DER,
-  TMM,
-  LTC,
-  RTC,
-  TRH
->>>>>>> Stashed changes:cmd_fj/comando.c
 } commands_t;
 
 typedef struct {
   commands_t command;
-
+  
   union {
     char name[4];
     char move[6];
@@ -92,11 +79,10 @@ void cmd_cnj (int argc, char** argv){
   char mypid[6];
   char buf_s[50];
   char buf_d[50];
-  char new_game[9];
   coms_t coms_msg;         // struct para realizar o envio dos comandos para o servidor
   
   if(argc != 3){    // comando + nome + dificuldade
-    printf("[ERRO] Número de argumentos inválido\n");
+    printf("[ERRO] Número de argumentos inválido. Tentar novamente. \n\n");
     return;     // volta para a "linha de comandos"
   }
 
@@ -109,7 +95,7 @@ void cmd_cnj (int argc, char** argv){
 
       /*-----------------------criar-socket-stream------------------------*/
       if((sd_stream = socket(AF_UNIX, SOCK_STREAM, 0)) < 0 ){  // tenta criar socket
-        perror("[ERRO] Criação de socket stream falhou. Tentar novamente:\n"); 
+        perror("[ERRO] Criação de socket stream falhou. Tentar novamente. \n"); 
         return;     // volta para a "linha de comandos"
       }
 
@@ -119,7 +105,7 @@ void cmd_cnj (int argc, char** argv){
       addrlen_s = sizeof(srv_addr_s.sun_family) + strlen(srv_addr_s.sun_path);
     
       if(connect(sd_stream, (struct sockaddr *)&srv_addr_s, addrlen_s) < 0){
-        perror("[ERRO] Connect. Tentar novamente:\n"); 
+        perror("[ERRO] Connect. Tentar novamente. \n"); 
         return;     // volta para a "linha de comandos"
       }
       
@@ -127,7 +113,7 @@ void cmd_cnj (int argc, char** argv){
       strcpy(coms_msg.arg1.name, argv[1]);
       
       if((write(sd_stream, &coms_msg, sizeof(coms_msg)) < 0)){
-        perror("[ERRO] Write para o servidor. Tentar novamente:\n");
+        perror("[ERRO] Write para o servidor. Tentar novamente. \n");
         close(sd_stream);
         return;     // volta para a "linha de comandos"
       }else{
@@ -137,7 +123,7 @@ void cmd_cnj (int argc, char** argv){
 
     /*----------------------criar-socket-datagrama----------------------*/
       if((sd_datagram = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0 ){     // tenta criar um socket datagrama
-        perror("[ERRO] Criação de socket datagrama falhou. Tentar Novamente:\n");
+        perror("[ERRO] Criação de socket datagrama falhou. Tentar Novamente. \n");
         close(sd_stream);
         return;     // volta para a "linha de comandos"
       }
@@ -150,7 +136,7 @@ void cmd_cnj (int argc, char** argv){
       addrlen_d = sizeof(my_addr_d.sun_family) + strlen(my_addr_d.sun_path);
       
       if(bind(sd_datagram, (struct sockaddr *)&my_addr_d, addrlen_d) < 0 ){
-        perror("[ERRO] Bind do socket datagrama. Tentar novamente:\n");
+        perror("[ERRO] Bind do socket datagrama. Tentar novamente. \n");
         close(sd_stream); 
         return;     // volta para a "linha de comandos"
       }
@@ -205,20 +191,17 @@ void cmd_jg (int argc, char** argv){
       }
     }
 
-<<<<<<< Updated upstream:code/client/comando.c
     cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);         // atribui dados a enviar, na estrutura de dados
-=======
-    cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);
->>>>>>> Stashed changes:cmd_fj/comando.c
 
     if((write(sd_stream, &cmd_msg, sizeof(cmd_msg)) < 0)){
-      perror("[ERRO] Write para o servidor. Tentar novamente:\n");
+      perror("[ERRO] Write para o servidor. Tentar novamente. \n");
       return;
     }else{
       while(read(sd_stream, val1_play, sizeof(val1_play)) < 0);       // espera até receber
       printf("[INFO] Jogada: %s\n", val1_play);                       // jogada
     }
   }
+
   if(dif == 2){
     if(strlen(argv[1]) != 5){
       printf("[ERRO] Repetir jogada! Introduzir 5 letras (de {ABCDEFGH})");
@@ -237,7 +220,7 @@ void cmd_jg (int argc, char** argv){
     cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);
 
     if((write(sd_stream, &cmd_msg, sizeof(cmd_msg)) < 0)){
-      perror("[ERRO] Write para o servidor. Tentar novamente:\n");
+      perror("[ERRO] Write para o servidor. Tentar novamente.\n");
       return;
     }else{
       while(read(sd_stream, val2_play, sizeof(val2_play)) < 0);
@@ -252,13 +235,16 @@ void cmd_jg (int argc, char** argv){
 +--------------------------------------------------------------------------*/
 void cmd_clm (int argc, char** argv){
   char requested_info[15];
+  coms_t cmd_msg;
 
-  if(sendto(sd_datagram, argv[0], strlen(argv[0]) + 1, 0, (struct sockaddr *)&to_d, tolen_d) < 0){
-    printf("[ERRO] Envio de pedido ao servidor");
-    return;     // volta para a "linha de comandos"
+  cmd_msg.command = CLM;
+
+  if(sendto(sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&to_d, tolen_d) < 0){
+    printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \n");
+    return;       // volta para a "linha de comandos"
   }else{
     if(recvfrom(sd_datagram, requested_info, sizeof(requested_info), 0, (struct sockaddr *)&to_d, &tolen_d) < 0){
-      printf("[ERRO] Receção de informação do servidor");
+      printf("[ERRO] Receção de informação do servidor. Tentar novamente. \n");
       return;     // volta para a "linha de comandos"                                            
     }else{
       printf("[INFO] Informação recebida: %s\n", requested_info);
@@ -271,32 +257,26 @@ void cmd_clm (int argc, char** argv){
 | Function: cmd_mlm - mudar limites
 +--------------------------------------------------------------------------*/
 void cmd_mlm (int argc, char** argv){
-  char request[50];
-  char from_serv[50];
-  int jogadas, tempo;
+  bool xflag;
   coms_t cmd_msg;
 
   if(argc == 3){
-    jogadas = atoi(argv[1]);
-    tempo = atoi(argv[2]);
-
-    if((atoi()) || (tempo > 0)){
-      sprintf(request, "%s %s %s", argv[0], argv[1], argv[2]);
+    if((atoi(argv[1]) > 0) && ((atoi(argv[2])) > 0)){
+      cmd_msg.command = MLM; cmd_msg.arg1.j = atoi(argv[1]); cmd_msg.arg2.t = atoi(argv[2]);
       
-      if(sendto(sd_datagram, request, strlen(request) + 1, 0, (struct sockaddr *)&to_d, tolen_d) < 0){
-        printf("[ERRO] Envio de pedido ao servidor");
+      if(sendto(sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&to_d, tolen_d) < 0){
+        printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \n");   // envio falhou
         return;     // volta para a "linha de comandos"
       }else{                                                                          /* ALGO DO GÉNERO "PEDIDO CONCEBIDO. NOVOS LIMITES: ..." */
-        if(recvfrom(sd_datagram, from_serv, sizeof(from_serv), 0, (struct sockaddr *)&to_d, &tolen_d) < 0){
-          printf("[ERRO] Receção de informação do servidor");
+        if(recvfrom(sd_datagram, &xflag, sizeof(xflag), 0, (struct sockaddr *)&to_d, &tolen_d) < 0){
+          printf("[ERRO] Receção de informação do servidor. Tentar novamente. \n");     // receção falhou
           return;     // volta para a "linha de comandos"                                            
         }else{
-          printf("[INFO] Informação recebida: %s\n", from_serv);
+          printf("[INFO] Envio de registos para o histórico: %s", xflag ? "true" : "false");
         }
       }
-
     }else{
-      printf("[ERRO] Argumento(s) fora dos limites válidos.");
+      printf("[ERRO] Argumento(s) fora dos limites válidos. Tentar novamente. \n");
     }
   }else{
     printf("[ERRO] Número de argumentos inválido. Escrever 'sos' para consultar ajuda.\n");
@@ -308,7 +288,22 @@ void cmd_mlm (int argc, char** argv){
 | Function: cmd_cer - consultar estado
 +--------------------------------------------------------------------------*/
 void cmd_cer (int argc, char** argv){
-  printf("1");
+  char requested_info[15];
+  coms_t cmd_msg;
+
+  cmd_msg.command = CER;
+
+  if(sendto(sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&to_d, tolen_d) < 0){
+    printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \n");
+    return;       // volta para a "linha de comandos"
+  }else{
+    if(recvfrom(sd_datagram, requested_info, sizeof(requested_info), 0, (struct sockaddr *)&to_d, &tolen_d) < 0){
+      printf("[ERRO] Receção de informação do servidor. Tentar novamente. \n");
+      return;     // volta para a "linha de comandos"                                            
+    }else{
+      printf("[INFO] Informação recebida: %s\n", requested_info);
+    }
+  }
 }
 
 
@@ -316,7 +311,22 @@ void cmd_cer (int argc, char** argv){
 | Function: cmd_aer - activar envio
 +--------------------------------------------------------------------------*/
 void cmd_aer (int argc, char** argv){
-  printf("1");
+  char requested_info[15];
+  coms_t cmd_msg;
+
+  cmd_msg.command = AER;
+
+  if(sendto(sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&to_d, tolen_d) < 0){
+    printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \n");
+    return;       // volta para a "linha de comandos"
+  }else{
+    if(recvfrom(sd_datagram, requested_info, sizeof(requested_info), 0, (struct sockaddr *)&to_d, &tolen_d) < 0){
+      printf("[ERRO] Receção de informação do servidor. Tentar novamente. \n");
+      return;     // volta para a "linha de comandos"                                            
+    }else{
+      printf("[INFO] Informação recebida: %s\n", requested_info);
+    }
+  }
 }
 
 

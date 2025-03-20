@@ -1,5 +1,8 @@
 {
     "files.associations": {
-        "client.h": "c"
+        "client.h": "c",
+        "string.h": "c",
+        "socket.h": "c",
+        "types.h": "c"
     }
 }
