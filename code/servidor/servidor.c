@@ -1,27 +1,39 @@
+#pragma pack(1)
 #include "mastermind.h"
 #define MSG "SERVER IS ALIVE AND WELL"
 
 //terei de verificar se de facto é necessário que isto seja global
-char buffer_stream[100], buffer_dgram[100]; //posso usar só 1 buffer com mutex I think mas acho que ia tornar tudo mais lento sem necessidade e o prof não especifica
+coms_t buffer_stream, buffer_dgram; //posso usar só 1 buffer com mutex I think mas acho que ia tornar tudo mais lento sem necessidade e o prof não especifica
 pthread_t thread_middleman;
 pthread_t thread_gameinstance[NJMAX]; //acho que isto pode ser local ao middleman
 game_t* game_instances[NJMAX] = {0}; //maybe pode ser removido, confirmar
 sem_t sem_mm, sem_handler, sem_create, sem1, sem2, sem3, sem4;
 int sd_global = 0;
+struct sockaddr_un addr;
+socklen_t addrlen;
 
 
 //inicialização do jogo
 void create_new_game(game_t* game, int game_number)
 {
-    strcpy(game->correct_sequence, "AAA"); //inicializa o código secreto
-    game->log.nd = buffer_dgram[8]; //dificuldade está na posição 8
-    strncpy(game->log.nj, &buffer_dgram[4], 3); //inicializa o nome do jogador
-    game->log.nj[3] = '\0'; //adicionar terminação da string
+    game->log.nd = buffer_stream.arg2.n; //dificuldade
+    strcpy(game->log.nj, buffer_stream.arg1.Name); //nome do jogador
     game->log.nt = 0;
     game->log.ti = time(NULL);
     game->log.tf = NO_TIME_REGISTERED; //inicializei com alguma coisa para conseguir perceber se der problemas
-    game->n_char = 3;
-    game->nt_max = 3; 
+    game->nt_max = 3;
+    if (buffer_stream.arg2.n == 1)
+    {
+        game->n_char = 3;
+        //falta adicionar aleatoriedade
+        strcpy(game->correct_sequence, "AAA"); //inicializa o código secreto
+    }
+    else if (buffer_stream.arg2.n == 2)
+    {
+        game->n_char = 5;
+        //falta adicionar aleatoriedade
+        strcpy(game->correct_sequence, "AAAAA"); //inicializa o código secreto
+    }
     
     //game->player_move = "0000"; desnecessário (provavelmente), also tem de ser com strcpy
 
@@ -80,7 +92,7 @@ void* thread_func_gameinstance(void* arg)
                 printf("[ERRO] Game number inválido: %d\n", game_number);
                 exit(-1);
         }
-        strcpy(current_game->player_move, &buffer_stream[3]);
+        strcpy(current_game->player_move, buffer_stream.arg1.move);
         printf("Move: %s \n Correct move: %s\n", current_game->player_move, current_game->correct_sequence);
         state = analise_move(current_game);
         printf("Gamestate = %d\n", state);
@@ -119,79 +131,89 @@ void* thread_func_middleman()
 //talvez dê para comprimir writes da função 
 void stream_handler(int socket_descriptor)
 {
-    int game_number = -1;
-    char result[strlen(MOVE_REGISTERED)+8+1];
 
-    if(!strncmp(buffer_stream, "cnj", 3))
+    switch (buffer_stream.command)
     {
-        printf("[INFO] SERVER_STREAM: O jogador com descriptor %d deseja começar um novo jogo: %s\n", socket_descriptor, buffer_stream);
-        sd_global = socket_descriptor;
-        
-        //ATIVAR MIDDLEMAN
-        sem_post(&sem_mm);
-        sem_wait(&sem_create);
-        //enviar mensagem ao jogador para lhe confirmar que request foi aceite
-        if(write(socket_descriptor, GAME_ACCEPTED, strlen(GAME_ACCEPTED)+1) < 0)    
-        {
-            perror("[ERRO] Erro no envio de stream");
-        }
-    }
-    else if(!strncmp(buffer_stream, "jg", 2))
-    {
-        //enviar jogada associada ao socket de onde foi recebida stream para a thread de jogo adequada
-        for (int i = 0; i < NJMAX; ++i)
-        {
-            if ((game_instances[i] != NULL) && (game_instances[i]->sd == socket_descriptor))
-            {
-                game_number = i;
-                break;
-            }
-            else printf("Não é o game number nº%d\n", i);
-        }
-
-        switch (game_number)
-        {
-            case 0:
-                sem_post(&sem1);
-                break;
+        case CNJ:
+            printf("[INFO] SERVER_STREAM: O jogador %s:%d deseja começar um novo jogo.", buffer_stream.arg1.Name, socket_descriptor);
+            sd_global = socket_descriptor;
             
-            case 1:
-                sem_post(&sem2);
-                break;
+            //ATIVAR MIDDLEMAN
+            sem_post(&sem_mm);
+            sem_wait(&sem_create);
+            //enviar mensagem ao jogador para lhe confirmar que request foi aceite
+            if(write(socket_descriptor, GAME_ACCEPTED, strlen(GAME_ACCEPTED)+1) < 0)    
+            {
+                perror("[ERRO] Erro no envio de stream");
+            }
+            break;
 
-            case 2:
-                sem_post(&sem3);
-                break;
+        case JG:
+            //enviar jogada associada ao socket de onde foi recebida stream para a thread de jogo adequada
+            int game_number = -1;
+            char result[strlen(MOVE_REGISTERED)+8+1];
 
-            case 3:
-                sem_post(&sem4);
-                break;
+            for (int i = 0; i < NJMAX; ++i)
+            {
+                if ((game_instances[i] != NULL) && (game_instances[i]->sd == socket_descriptor))
+                {
+                    game_number = i;
+                    break;
+                }
+                else printf("Não é o game number nº%d\n", i);
+            }
 
-            default:
-                printf("[ERRO] Game number inválido: %d\n", game_number);
-                exit(-1);
-        }
+            switch (game_number)
+            {
+                case 0:
+                    sem_post(&sem1);
+                    break;
+                
+                case 1:
+                    sem_post(&sem2);
+                    break;
 
-        printf("[INFO] SERVER_STREAM: O jogador com descriptor %d deseja fazer a seguinte jogada: %s\n", socket_descriptor, buffer_stream);
+                case 2:
+                    sem_post(&sem3);
+                    break;
 
-        //enviar mensagem ao jogador para lhe mostrar resultado da jogada
-        sem_wait(&sem_handler);
-        sprintf(result, "nb:%d np:%d", game_instances[game_number]->nb, game_instances[game_number]->np);
-        printf("Resultado da jogada: %s\n", result);
-        if(write(socket_descriptor, result, strlen(result)+1) < 0)    
-        {
-            perror("[ERRO] Erro no envio de stream");
-        }
+                case 3:
+                    sem_post(&sem4);
+                    break;
+
+                default:
+                    printf("[ERRO] Game number inválido: %d\n", game_number);
+                    exit(-1);
+            }
+
+            printf("[INFO] SERVER_STREAM: O jogador com descriptor %d deseja fazer a seguinte jogada: %s\n", socket_descriptor, buffer_stream.arg1.move);
+
+            //enviar mensagem ao jogador para lhe mostrar resultado da jogada
+            sem_wait(&sem_handler);
+            sprintf(result, "nb:%d np:%d", game_instances[game_number]->nb, game_instances[game_number]->np);
+            printf("Resultado da jogada: %s\n", result);
+            if(write(socket_descriptor, result, strlen(result)+1) < 0)    
+            {
+                perror("[ERRO] Erro no envio de stream");
+            }
+            break;
+        
+        //default:
+<<<<<<< Updated upstream
+        //    printf("[ERRO] Lixo no buffer stream.\n");
+        //    break;
+=======
+          //  printf("[ERRO] Lixo no buffer stream.\n");
+            //break;
+>>>>>>> Stashed changes
     }
-    else
-    {
-        printf("[ERRO] Lixo no buffer stream: %s\n", buffer_stream);
-    }
+
+    return;
 }
 
 void datagram_handler(int socket_descriptor, struct sockaddr_un client_addr, socklen_t client_addrlen)
 {
-    printf("[INFO] SERVER_DATAGRAMA: Recebi\"%s\" do cliente \"%s\" \n", buffer_dgram, client_addr.sun_path); //mostrar o que foi recebido
+    //printf("[INFO] SERVER_DATAGRAMA: Recebi\"%s\" do cliente \"%s\" \n", buffer_dgram, client_addr.sun_path); //mostrar o que foi recebido
     //enviar algo para o cliente 
     if(sendto(socket_descriptor, MSG, strlen(MSG)+1, 0, (struct sockaddr*) &client_addr, client_addrlen) < 0)
     {
@@ -239,8 +261,8 @@ void communications()
     strcpy(dgramsv_addr.sun_path, JMMSERVSD);
     dgramsv_addrlen = sizeof(dgramsv_addr.sun_family) + strlen(dgramsv_addr.sun_path);
   
-  
-    unlink(JMMSERVSD); //remover ficheiro socket caso este já tenha sido criado previamente
+    //remover ficheiro socket caso este já tenha sido criado previamente
+    unlink(JMMSERVSD); 
     unlink(JMMSERVSS);
   
     //ligar server às socket (bind)
@@ -322,7 +344,7 @@ void communications()
             if(s > 0 && FD_ISSET(s, &rfds))
             {
                 //ler mensagem do cliente
-                if(read(s, buffer_stream, sizeof(buffer_stream)) <= 0) 
+                if(read(s, &buffer_stream, sizeof(buffer_stream)) <= 0) 
                 {
                     perror("[AVISO] Cliente desconectou-se");
                     close(s);
@@ -340,7 +362,7 @@ void communications()
         if(FD_ISSET(sd_datagram, &rfds))
         {
             client_addrlen = sizeof(client_addr);
-            if(recvfrom(sd_datagram, buffer_dgram, sizeof(buffer_dgram), 0, (struct sockaddr *) &client_addr, &client_addrlen) < 0)
+            if(recvfrom(sd_datagram, &buffer_dgram, sizeof(buffer_dgram), 0, (struct sockaddr *) &client_addr, &client_addrlen) < 0)
             {
                 perror("[ERRO] Erro na recepção de datagrama");
             }
