@@ -15,30 +15,24 @@ endif
 
 
 # Default TARGET
-all: bin/server.exe
+all: servidor/MMJ_server.exe log_server/MMJ_log.exe
 
-# Default TARGET
-run: all
-	./bin/server.exe
+servidor/MMJ_server.exe: servidor/servidor.o servidor/core_gameplay.o include/mastermind.h
+#	$(CC) $^ -o $@
+	cd ./servidor && make
 
-build/servidor.o: servidor/servidor.c servidor/core_gameplay.h include/mastermind.h
-	@mkdir -p build
-	$(CC) $(CFLAGS) -c $< -o $@
+log_server/MMJ_log.exe: log_server/log_server.o log_server/log_server.h include/mastermind.h
+#	$(CC) $^ -o $@
+	cd ./log_server && make
 
-build/core_gameplay.o: servidor/core_gameplay.c servidor/core_gameplay.h include/mastermind.h
-	@mkdir -p build
-	$(CC) $(CFLAGS) -c $< -o $@
-
-bin/server.exe: build/core_gameplay.o build/servidor.o 
-	@mkdir -p bin
-	$(CC) $^ -o $@
-
-test: test/core_gameplay_test.c build/core_gameplay.o
-	@mkdir -p test
-	$(CC) $(CFLAGS) $^ -o test/test.exe
-	./test/test.exe
+# app server
+#run_s: ./servidor/MMJ_server.exe
+#	./servidor/MMJ_server.exe
 
 
+# run server
+run_s: ./servidor/MMJ_server.exe
+	./servidor/MMJ_server.exe
 
 # Clean build files
 clean:
