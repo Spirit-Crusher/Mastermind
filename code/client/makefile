@@ -1,11 +1,10 @@
 CC=gcc
 CFLAGS= -Wall
 
-OBJS= cmd.o comando.o monitor.o
+OBJS= cliente.o comandos.o monitor.o
 
-cmd: $(OBJS)
-	$(CC) -o cmd $(OBJS)
+cliente: $(OBJS)
+	$(CC) -o cliente $(OBJS)
 
 clean:
-	rm cmd $(OBJS)
-
+	rm cliente $(OBJS)

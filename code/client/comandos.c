@@ -70,6 +70,7 @@ void cmd_sair (int argc, char **argv){        // POSSO FAZER close(..) ou unlink
   close(sd_datagram);
   exit(0);
 }
+/*-------------------------------------------------------------------------*/
 
 
 /*-------------------------------------------------------------------------+
@@ -163,6 +164,7 @@ void cmd_cnj (int argc, char** argv){
     }
   }
 }
+/*-------------------------------------------------------------------------*/
 
 
 /*-------------------------------------------------------------------------+
@@ -228,6 +230,7 @@ void cmd_jg (int argc, char** argv){
     }
   }
 }
+/*-------------------------------------------------------------------------*/
 
 
 /*-------------------------------------------------------------------------+
@@ -251,6 +254,7 @@ void cmd_clm (int argc, char** argv){
     }
   }
 }
+/*-------------------------------------------------------------------------*/
 
 
 /*-------------------------------------------------------------------------+
@@ -282,13 +286,14 @@ void cmd_mlm (int argc, char** argv){
     printf("[ERRO] Número de argumentos inválido. Escrever 'sos' para consultar ajuda.\n");
   }
 }
+/*-------------------------------------------------------------------------*/
 
 
 /*-------------------------------------------------------------------------+
 | Function: cmd_cer - consultar estado
 +--------------------------------------------------------------------------*/
 void cmd_cer (int argc, char** argv){
-  char requested_info[15];
+  bool xflag;
   coms_t cmd_msg;
 
   cmd_msg.command = CER;
@@ -297,53 +302,78 @@ void cmd_cer (int argc, char** argv){
     printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \n");
     return;       // volta para a "linha de comandos"
   }else{
-    if(recvfrom(sd_datagram, requested_info, sizeof(requested_info), 0, (struct sockaddr *)&to_d, &tolen_d) < 0){
+    if(recvfrom(sd_datagram, &xflag, sizeof(xflag), 0, (struct sockaddr *)&to_d, &tolen_d) < 0){
       printf("[ERRO] Receção de informação do servidor. Tentar novamente. \n");
       return;     // volta para a "linha de comandos"                                            
     }else{
-      printf("[INFO] Informação recebida: %s\n", requested_info);
+      printf("[INFO] Envio de registos para o histórico: %s", xflag ? "true" : "false");
     }
   }
 }
+/*-------------------------------------------------------------------------*/
 
 
 /*-------------------------------------------------------------------------+
 | Function: cmd_aer - activar envio
 +--------------------------------------------------------------------------*/
 void cmd_aer (int argc, char** argv){
-  char requested_info[15];
+  bool xflag;
   coms_t cmd_msg;
 
-  cmd_msg.command = AER;
+  cmd_msg.command = DER;
 
   if(sendto(sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&to_d, tolen_d) < 0){
     printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \n");
     return;       // volta para a "linha de comandos"
   }else{
-    if(recvfrom(sd_datagram, requested_info, sizeof(requested_info), 0, (struct sockaddr *)&to_d, &tolen_d) < 0){
+    if(recvfrom(sd_datagram, &xflag, sizeof(xflag), 0, (struct sockaddr *)&to_d, &tolen_d) < 0){
       printf("[ERRO] Receção de informação do servidor. Tentar novamente. \n");
       return;     // volta para a "linha de comandos"                                            
     }else{
-      printf("[INFO] Informação recebida: %s\n", requested_info);
+      if(xflag)
+        printf("[INFO] Informação recebida: REGISTO HISTÓRICO FOI ATIVADO \n");
+      else
+        printf("[INFO] Informação recebida: REGISTO HISTÓRICO NÃO FOI ATIVADO \n");
     }
   }
 }
+/*-------------------------------------------------------------------------*/
 
 
 /*-------------------------------------------------------------------------+
 | Function: cmd_der - desactivar envio
 +--------------------------------------------------------------------------*/
 void cmd_der (int argc, char** argv){
-  printf("1");
+  bool xflag;
+  coms_t cmd_msg;
+
+  cmd_msg.command = DER;
+
+  if(sendto(sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&to_d, tolen_d) < 0){
+    printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \n");
+    return;       // volta para a "linha de comandos"
+  }else{
+    if(recvfrom(sd_datagram, &xflag, sizeof(xflag), 0, (struct sockaddr *)&to_d, &tolen_d) < 0){
+      printf("[ERRO] Receção de informação do servidor. Tentar novamente. \n");
+      return;     // volta para a "linha de comandos"                                            
+    }else{
+      if(xflag)
+        printf("[INFO] Informação recebida: REGISTO HISTÓRICO FOI DESATIVADO \n");
+      else
+        printf("[INFO] Informação recebida: REGISTO HISTÓRICO NÃO FOI DESATIVADO \n");
+    }
+  }
 }
+/*-------------------------------------------------------------------------*/
 
 
 /*-------------------------------------------------------------------------+
-| Function: cmd_tmm - terminar processo mastermind
+| Function: cmd_tmm - terminar processo mastermind, matar servidor
 +--------------------------------------------------------------------------*/
 void cmd_tmm (int argc, char** argv){
   printf("1");
 }
+/*-------------------------------------------------------------------------*/
 
 
 
@@ -355,6 +385,7 @@ void cmd_tmm (int argc, char** argv){
 void cmd_ltc (int argc, char** argv){
   printf("1");
 }
+/*-------------------------------------------------------------------------*/
 
 
 /*-------------------------------------------------------------------------+
@@ -363,6 +394,7 @@ void cmd_ltc (int argc, char** argv){
 void cmd_rtc (int argc, char** argv){
   printf("1");
 }
+/*-------------------------------------------------------------------------*/
 
 
 /*-------------------------------------------------------------------------+
@@ -371,6 +403,12 @@ void cmd_rtc (int argc, char** argv){
 void cmd_trh (int argc, char** argv){
   printf("1");
 }
+/*-------------------------------------------------------------------------*/
+
+
+
+
+
 
 
 /*-------------------------------------------------------------------------+
@@ -382,3 +420,4 @@ void cmd_test (int argc, char** argv){
   for (i = 0; i < argc; i++)
     printf ("\nargv[%d] = %s", i, argv[i]);
 }
+/*-------------------------------------------------------------------------*/
