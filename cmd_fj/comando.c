@@ -37,17 +37,10 @@ struct sockaddr_un to_d;
 struct sockaddr_un my_addr_d;
 
 typedef enum {
-  CNJ,
-  JG,
-  CLM,
-  MLM,
-  CER,
-  AER,
-  DER,
-  TMM,
-  LTC,
-  RTC,
-  TRH
+  CNJ, JG, CLM,
+  MLM, CER, AER,
+  DER, TMM, LTC,
+  RTC, TRH
 } commands_t;
 
 typedef struct {
@@ -72,7 +65,7 @@ typedef struct {
 +--------------------------------------------------------------------------*/ 
 void cmd_sair (int argc, char **argv){        // POSSO FAZER close(..) ou unlink(..) A COISAS QUE NÃO EXISTEM? OU SEJA SD AINDA NÃO TINHA SIDO CRIADO P.E.
   close(sd_stream);
-  //unlink(my_addr_d.sun_path)
+  unlink(my_addr_d.sun_path);
   close(sd_datagram);
   exit(0);
 }
@@ -198,7 +191,7 @@ void cmd_jg (int argc, char** argv){
       }
     }
 
-    cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);
+    cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);         // atribui dados a enviar, na estrutura de dados
 
     if((write(sd_stream, &cmd_msg, sizeof(cmd_msg)) < 0)){
       perror("[ERRO] Write para o servidor. Tentar novamente:\n");
@@ -263,12 +256,13 @@ void cmd_mlm (int argc, char** argv){
   char request[50];
   char from_serv[50];
   int jogadas, tempo;
+  coms_t cmd_msg;
 
   if(argc == 3){
     jogadas = atoi(argv[1]);
     tempo = atoi(argv[2]);
 
-    if((jogadas > 0) || (tempo > 0)){
+    if((atoi()) || (tempo > 0)){
       sprintf(request, "%s %s %s", argv[0], argv[1], argv[2]);
       
       if(sendto(sd_datagram, request, strlen(request) + 1, 0, (struct sockaddr *)&to_d, tolen_d) < 0){
