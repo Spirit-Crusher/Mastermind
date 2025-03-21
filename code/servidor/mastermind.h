@@ -1,3 +1,5 @@
+#pragma once
+
 /****************** Includes *******************/
 #include <stdio.h>
 #include <time.h>
@@ -28,6 +30,9 @@
 #define MOVE_REGISTERED "YOUR MOVE HAS BEEN REGISTERED"
 #define MSG "SERVER IS ALIVE AND WELL"
 #define GAME_DENIED "SERVER IS FULL. YOUR GAME HAS BEEN DENIED"
+#define GAME_LOST "GAME OVER. YOU LOSE"
+#define GAME_WON "WINNER!"
+#define GAME_CRASHED "YOUR GAME HAS CRASHED"
 
 /****************** Enums *******************/
 typedef enum
@@ -111,4 +116,4 @@ typedef struct
 } coms_t;
 
 /***************************  Fuctions ***************************/
-game_state_t analise_move(game_t *game_pt);
+void generate_key(char *key, game_diff_t level);
