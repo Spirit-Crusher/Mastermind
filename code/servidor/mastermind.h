@@ -62,14 +62,6 @@ typedef enum
 } commands_t;
 
 /****************** Structs *******************/
-typedef struct 
-{
-  int sd;
-  int game_number;
-  int sock_stream;
-} new_game_info;
-
-
 typedef struct
 {               /* estrutura de um registo de jogo */
     int nd;     /* nível de dificuldade do jogo */
@@ -114,6 +106,19 @@ typedef struct
   } arg2;
 
 } coms_t;
+
+typedef struct 
+{
+  int sd;
+  int game_number;
+  int sock_stream;
+  coms_t buffer_s;
+} new_game_info;
+
+typedef struct
+{
+
+} rules_t;
 
 /***************************  Fuctions ***************************/
 void generate_key(char *key, game_diff_t level);
