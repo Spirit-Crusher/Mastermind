@@ -26,6 +26,8 @@
 #define NO_TIME_REGISTERED -1
 #define GAME_ACCEPTED "YOUR GAME WILL START SOON"
 #define MOVE_REGISTERED "YOUR MOVE HAS BEEN REGISTERED"
+#define MSG "SERVER IS ALIVE AND WELL"
+#define GAME_DENIED "SERVER IS FULL. YOUR GAME HAS BEEN DENIED"
 
 /****************** Enums *******************/
 typedef enum
@@ -55,6 +57,14 @@ typedef enum
 } commands_t;
 
 /****************** Structs *******************/
+typedef struct 
+{
+  int sd;
+  int game_number;
+  int sock_stream;
+} new_game_info;
+
+
 typedef struct
 {               /* estrutura de um registo de jogo */
     int nd;     /* nível de dificuldade do jogo */

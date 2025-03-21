@@ -6,7 +6,7 @@
 coms_t buffer_stream, buffer_dgram; //posso usar só 1 buffer com mutex I think mas acho que ia tornar tudo mais lento sem necessidade e o prof não especifica
 pthread_t thread_middleman;
 pthread_t thread_gameinstance[NJMAX]; //acho que isto pode ser local ao middleman
-game_t* game_instances[NJMAX] = {0}; //maybe pode ser removido, confirmar
+game_t* game_instances[NJMAX] = {0};
 sem_t sem_mm, sem_handler, sem_create;
 sem_t sem_games[4];
 int sd_global = 0;
@@ -362,67 +362,7 @@ void communications()
     unlink(JMMSERVSS);
 }
 
-game_state_t analise_move(game_t *game_pt)
-{ // MAX_SEQUENCE_SIZE
 
-    unsigned short int i, j, np = 0, nb = 0;
-    unsigned short int used_secret[MAX_SEQUENCE_SIZE] = {false};
-    unsigned short int used_guess[MAX_SEQUENCE_SIZE] = {false};
-
-    // incrementar o nº de jogadas
-    game_pt->log.nt++;
-
-    // procurar por letras certas no sítio certo
-    for (int i = 0; i < game_pt->n_char; ++i)
-    {
-        if (game_pt->correct_sequence[i] == game_pt->player_move[i])
-        {
-            np++;
-            used_secret[i] = true;
-            used_guess[i] = true;
-        }
-    }
-
-    // procurar por letras certas no sítio errado
-    for (int i = 0; i < game_pt->n_char; ++i)
-    {
-        if (!used_guess[i])
-        { // se esta posição não teve uma ligação direta
-            for (int j = 0; j < game_pt->n_char; j++)
-            {
-                if (!used_secret[j] && game_pt->correct_sequence[i] == game_pt->player_move[j])
-                {
-                    nb++;
-                    used_secret[j] = true;
-                    break;
-                }
-            }
-        }
-    }
-
-    // guardar nº de respostas certas no sítio certo/errado
-    game_pt->nb = nb;
-    game_pt->np = np;
-
-    // decrementar o nº de jogadas que faltam
-
-    // verificar se o jogo acabou
-    if (np == game_pt->n_char)
-    {
-        // jogador ganhou
-        game_pt->log.tf = time(NULL);
-        return game_pt->game_state = PLAYER_WIN;
-    }
-    else if (game_pt->nt_max == ++(game_pt->log.nt))
-    {
-        // jogador sem mais tentativas, perdeu
-        game_pt->log.tf = time(NULL);
-        return game_pt->game_state = PLAYER_LOST;
-    }
-
-    // jogo continua
-    return ONGOING;
-}
 
 int main() {
 
