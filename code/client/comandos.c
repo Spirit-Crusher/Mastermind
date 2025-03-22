@@ -399,7 +399,13 @@ void cmd_der (int argc, char** argv){
 | Function: cmd_tmm - terminar processo mastermind, matar servidor
 +--------------------------------------------------------------------------*/
 void cmd_tmm (int argc, char** argv){
-  printf("1");
+  coms_t cmd_msg = {.command = TMM};
+  if(sendto(sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&to_d, tolen_d) < 0)
+  {
+    printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \n");
+    return;       // volta para a "linha de comandos"
+  }
+  printf("[INFO] ABORT SENT\n");
 }
 /*-------------------------------------------------------------------------*/
 
