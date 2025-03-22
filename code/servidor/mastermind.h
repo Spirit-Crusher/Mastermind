@@ -40,6 +40,7 @@ typedef enum
     DIFF_ALL,
     DIFF_1,
     DIFF_2,
+
 } game_diff_t;
 
 typedef enum
@@ -47,6 +48,7 @@ typedef enum
     ONGOING,
     PLAYER_WIN,
     PLAYER_LOST,
+
 } game_state_t;
 
 typedef enum 
@@ -59,6 +61,7 @@ typedef enum
   AER,
   DER,
   TMM,
+
 } commands_t;
 
 /****************** Structs *******************/
@@ -69,6 +72,7 @@ typedef struct
     int nt;     /* número de tentativas usadas */
     time_t ti;  /* estampilha temporal início do jogo */
     time_t tf;  /* estampilha temporal fim do jogo */
+
 } rjg_t;
 
 typedef struct // variável de estado do jogo
@@ -76,15 +80,14 @@ typedef struct // variável de estado do jogo
     char correct_sequence[MAX_SEQUENCE_SIZE]; // sequência correta definida no início do jogo
     rjg_t log;                                // log do jogo para ser enviado depois ser armazenado
     unsigned short int n_char;          // número de caracteres na sequência
-    unsigned short int nt_max;                // número de tentativas total do jogador
     char player_move[MAX_SEQUENCE_SIZE];      // sequência enviada pelo utilizador
     unsigned short int np;                    // número de letras certas no sítio certo
     unsigned short int nb;                    // número de letras certas no sítio errado
-    // unsigned short int nt_left;               // número de tentativas que restam ao jogador //! adicionei este
     game_state_t game_state; // estado do jogo = {ONGOING,PLAYER_WIN,PLAYER_LOST}
     int sd; //socket descriptor associado a este jogador
     struct sockaddr_un player_addr; //address do cliente
     socklen_t addr_len; //comprimento do address
+
 } game_t;
 
 typedef struct
@@ -102,7 +105,7 @@ typedef struct
   union
   {
     unsigned short int n;
-    time_t t;
+    unsigned int t;
   } arg2;
 
 } coms_t;
@@ -113,10 +116,13 @@ typedef struct
   int game_number;
   int sock_stream;
   coms_t buffer_s;
+
 } new_game_info;
 
 typedef struct
 {
+  unsigned short int jmax; //nº max de jogadas
+  unsigned int tmax; //tempo de jogo maximo em segundos
 
 } rules_t;
 

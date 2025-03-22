@@ -18,7 +18,7 @@ default: ./JMM_server.exe
 
 # Run Default TARGET
 run: default
-	MMJ_server.exe
+	JMM_server.exe
 
 servidor_build/servidor.o: servidor.c servidor.h
 	@mkdir -p servidor_build
