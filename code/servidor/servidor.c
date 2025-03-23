@@ -19,8 +19,7 @@ void exit_handler()
 /*####################################################### analise_move ######################################################*/
 
 void analise_move(game_t *game_pt)
-{ // MAX_SEQUENCE_SIZE
-
+{
     unsigned short int np = 0, nb = 0;
     unsigned short int used_secret[MAX_SEQUENCE_SIZE] = {false};
     unsigned short int used_guess[MAX_SEQUENCE_SIZE] = {false};
@@ -87,17 +86,22 @@ void analise_move(game_t *game_pt)
 
 /*####################################################### create_new_game ######################################################*/
 
-void create_new_game(game_t* game, int game_number, int socket, coms_t buffer_stream)
+void create_new_game(game_t* game, int socket, coms_t buffer_stream)
 {
     game->log.nd = buffer_stream.arg2.n; //dificuldade
     strcpy(game->log.nj, buffer_stream.arg1.Name); //nome do jogador
     game->log.nt = 0;
     game->log.ti = time(NULL);
-    game->log.tf = NO_TIME_REGISTERED; //inicializei com alguma coisa para conseguir perceber se der problemas
+    game->log.tf = NO_TIME_REGISTERED;
+    game->np = 0;
+    game->nb = 0;
+    game->game_state = ONGOING;
+    game->sd = socket;
 
     printf("\ndif: %d\n\n", buffer_stream.arg2.n);
     printf("\nname: %s\n\n", buffer_stream.arg1.Name);
 
+    //gerar key com dimensão e letras diferentes conforme nivel de dificuldade
     if (buffer_stream.arg2.n == DIFF_1)
     {
         game->n_char = 3;
@@ -120,15 +124,6 @@ void create_new_game(game_t* game, int game_number, int socket, coms_t buffer_st
         exit(-1);
     }
 
-    //game->player_move = "0000"; desnecessário (provavelmente), also tem de ser com strcpy
-
-    game->np = 0;
-    game->nb = 0;
-    game->game_state = ONGOING;
-
-    //inicializar novas vars que criei
-    game->sd = socket;
-
     printf("[INFO] Init do jogo funcionou\n");
 
     return;
@@ -137,13 +132,12 @@ void create_new_game(game_t* game, int game_number, int socket, coms_t buffer_st
 
 /*####################################################### stream_handler ######################################################*/
 
-void stream_handler(int socket, int game_number, game_t* game, coms_t buffer_stream)
+void stream_handler(int socket, game_t* game, coms_t buffer_stream)
 {
     if (buffer_stream.command == JG)
     {
-        //enviar jogada associada ao socket de onde foi recebida stream para a thread de jogo adequada
+        //analisar jogada
         printf("[INFO] SERVER_STREAM: O jogador com descriptor %d deseja fazer a seguinte jogada: %s\n", socket, buffer_stream.arg1.move);
-
         strcpy(game->player_move, buffer_stream.arg1.move);
         printf("Move: %s    Correct move: %s\n", game->player_move, game->correct_sequence);
         analise_move(game);
@@ -164,11 +158,12 @@ void stream_handler(int socket, int game_number, game_t* game, coms_t buffer_str
 
 void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_addrlen)
 {
-    char buffer_send[50];
+    char buffer_send[50]; //buffer para mensagem de resposta
 
     switch (buffer_dgram.command)
     {
         case CLM:
+            //enviar regras atuais
             sprintf(buffer_send, "%d:%d", game_rules.maxj, game_rules.maxt);
             if(sendto(sd, buffer_send, strlen(buffer_send), 0, (struct sockaddr*) &client_addr, client_addrlen) < 0)
             {
@@ -177,8 +172,11 @@ void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_a
             break;
 
         case MLM:
+            //alterar as regras
             game_rules.maxj = buffer_dgram.arg1.j;
             game_rules.maxt = buffer_dgram.arg2.t;
+
+            printf("[AVISO] Regras alteradas globalmente: jmax=%d tmax=%d\n", game_rules.maxj, game_rules.maxt);
             
             sprintf(buffer_send, "Game rules changed.\n");
             if(sendto(sd, buffer_send, strlen(buffer_send), 0, (struct sockaddr*) &client_addr, client_addrlen) < 0)
@@ -217,13 +215,13 @@ void* thread_func_gameinstance(void* game_info)
     coms_t buffer_stream = info.buffer_s;
     int game_number = info.game_number;
     int socket = info.sd;
-    int stream = info.sock_stream;
+    //int stream = info.sock_stream;
     char result[strlen(MOVE_REGISTERED)+8+1]; //!melhorar isto
 
     printf("[INFO] Esta é a socket e o game number do novo jogador: %d:%d\n", socket, game_number);
 
     game_t* current_game = NULL;
-
+    //criar estrutura do novo jogo
     current_game = malloc(sizeof(game_t));
     if (current_game == NULL) 
     {
@@ -231,13 +229,16 @@ void* thread_func_gameinstance(void* game_info)
         exit(-1);
     }
 
+    //guardar novo jogo no vetor de jogos
     game_instances[game_number] = current_game;
 
-    create_new_game(current_game, game_number, socket, buffer_stream);
+    //inicializar jogo
+    create_new_game(current_game, socket, buffer_stream);
     printf("[INFO] Jogo nº%d foi iniciado\n", game_number);
 
     do
     {
+        //ler jogadas do jogador e processar as mesmas enquanto o jogo estiver a decorrer
         if(read(socket, &buffer_stream, sizeof(buffer_stream)) <= 0) 
         {
             perror("[AVISO] Cliente desconectou-se");
@@ -247,10 +248,8 @@ void* thread_func_gameinstance(void* game_info)
             return NULL;
         }
 
-        
         printf("STATE1 = %d\n", current_game->game_state);
-        stream_handler(socket, game_number, current_game, buffer_stream); //processar request
-
+        stream_handler(socket, current_game, buffer_stream); //processar request
         printf("STATE2 = %d\n", current_game->game_state);
 
         switch (current_game->game_state)
@@ -266,6 +265,7 @@ void* thread_func_gameinstance(void* game_info)
                 break;
 
             case PLAYER_LOST:
+                //informar jogador da derrota
                 printf("[INFO] O jogador perdeu\n");
                 if(write(socket, GAME_LOST, strlen(GAME_LOST)+1) < 0)    
                 {
@@ -274,6 +274,7 @@ void* thread_func_gameinstance(void* game_info)
                 break;
             
             case PLAYER_WIN:
+                //informar jogador da vitória
                 printf("[INFO] O jogador ganhou\n");
                 if(write(socket, GAME_WON, strlen(GAME_WON)+1) < 0)    
                 {
@@ -291,6 +292,7 @@ void* thread_func_gameinstance(void* game_info)
         
     } while(current_game->game_state == ONGOING);
     
+    //terminar jogo
     close(socket);
     free(current_game);
     game_instances[game_number] = NULL;
@@ -305,12 +307,11 @@ void* thread_func_acceptgames()
 {
     coms_t buffer_stream;
     int sd_stream; //socket descriptor do servidor para stream
-    int s; //client specific socket descriptor
-    int new_sock, max_sd, request_made, i;
+    int new_sock; //client specific socket descriptor
     struct sockaddr_un streamsv_addr;
     socklen_t streamsv_addrlen;
-    fd_set rfds; //set dos descriptors das sockets
-    int client_sockets_fd[NJMAX] = {0}; //array com socket descriptors de todos os clientes
+    /*fd_set rfds; //set dos descriptors das sockets
+    int client_sockets_fd[NJMAX] = {0}; //array com socket descriptors de todos os clientes*/
     
     //criação da socket stream
     if((sd_stream = socket(AF_UNIX, SOCK_STREAM, 0)) < 0 ) 
@@ -347,6 +348,7 @@ void* thread_func_acceptgames()
 
     while (true)
     {
+        //aceitar novos jogadores
         client_addrlen = sizeof(client_addr);
         if((new_sock = accept(sd_stream, (struct sockaddr *)&client_addr, &client_addrlen)) < 0) 
         {
@@ -356,6 +358,7 @@ void* thread_func_acceptgames()
 
         printf("[AVISO] Novo cliente conectado.\n");
 
+        //ler mensagem (em princípio será um cnj tendo em conta que são novos jogadores)
         if(read(new_sock, &buffer_stream, sizeof(buffer_stream)) <= 0) 
         {
             perror("[ERRO] Erro a ler stream");
@@ -418,7 +421,7 @@ int main()
 
     srand(time(NULL));
 
-    //INICIAR THREAD ACEITA JOGOS
+    //iniciar thread aceita jogos
     if (pthread_create(&thread_acceptgames, NULL, thread_func_acceptgames, NULL) != 0)
     {
         perror("[ERRO] Criação da thread acceptgames falhou\n");
@@ -432,7 +435,7 @@ int main()
         exit(-1);
     }
 
-    //inicializar socket DATAGRAM
+    //inicializar socket datagrama
     dgramsv_addr.sun_family = AF_UNIX;
     memset(dgramsv_addr.sun_path, 0, sizeof(dgramsv_addr.sun_path));
     strcpy(dgramsv_addr.sun_path, JMMSERVSD);
