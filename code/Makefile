@@ -17,11 +17,11 @@ endif
 # Default TARGET
 all: servidor/MMJ_server.exe log_server/MMJ_log.exe
 
-servidor/MMJ_server.exe: servidor/servidor.o servidor/core_gameplay.o include/mastermind.h
+servidor/MMJ_server.exe: servidor/servidor_build/servidor.o servidor/servidor_build/core_gameplay.o include/mastermind.h
 #	$(CC) $^ -o $@
 	cd ./servidor && make
 
-log_server/MMJ_log.exe: log_server/log_server.o log_server/log_server.h include/mastermind.h
+log_server/MMJ_log.exe: log_server/log_server_build/log_server.o log_server/log_server.h include/mastermind.h
 #	$(CC) $^ -o $@
 	cd ./log_server && make
 

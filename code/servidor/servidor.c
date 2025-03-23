@@ -8,7 +8,7 @@ pthread_t thread_gameinstance[NJMAX]; //acho que isto pode ser local ao acceptga
 game_t* game_instances[NJMAX] = {0};
 struct sockaddr_un client_addr;
 socklen_t client_addrlen; //não será igual ao server_addrlen? (acho que posso eliminar esta variável e passar o server_addrlen para addrlen)
-rules_t game_rules = {.maxj = MAXNJ, .maxt = MAXT*60};
+rules_t global_game_rules = {.maxj = MAXNJ, .maxt = MAXT*1}; //! por em segundos??
 
 
 void exit_handler()
@@ -69,11 +69,19 @@ void analise_move(game_t *game_pt)
         game_pt->log.tf = time(NULL);
         game_pt->game_state = PLAYER_WIN;
     }
-    else if (game_rules.maxj <= game_pt->log.nt)
+    else if (game_pt->game_rules.maxj <= game_pt->log.nt)
     {
         // jogador sem mais tentativas, perdeu
-        game_pt->log.tf = time(NULL);
+        game_pt->log.tf = time(NULL);   //! btw, jogos perdidos não são guardados no log
         game_pt->game_state = PLAYER_LOST;
+        printf("[INFO] O jogador perdeu por falta de TENTATIVAS\n");
+    }
+    else if (difftime(time(NULL), game_pt->log.ti) >= game_pt->game_rules.maxt)
+    {
+        // jogador sem mais tempo, perdeu
+        game_pt->log.tf = time(NULL);   //! btw, jogos perdidos não são guardados no log
+        game_pt->game_state = PLAYER_LOST;
+        printf("[INFO] O jogador perdeu por falta de TEMPO\n");
     }
     else
     {   // jogo continua
@@ -97,6 +105,10 @@ void create_new_game(game_t* game, int socket, coms_t buffer_stream)
     game->nb = 0;
     game->game_state = ONGOING;
     game->sd = socket;
+
+    //inicializar regras do jogo
+    game->game_rules.maxj = global_game_rules.maxj;
+    game->game_rules.maxt = global_game_rules.maxt;
 
     printf("\ndif: %d\n\n", buffer_stream.arg2.n);
     printf("\nname: %s\n\n", buffer_stream.arg1.Name);
@@ -163,8 +175,8 @@ void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_a
     switch (buffer_dgram.command)
     {
         case CLM:
-            //enviar regras atuais
-            sprintf(buffer_send, "%d:%d", game_rules.maxj, game_rules.maxt);
+            //enviar regras globais atuais
+            sprintf(buffer_send, "%d:%d", global_game_rules.maxj, global_game_rules.maxt);
             if(sendto(sd, buffer_send, strlen(buffer_send), 0, (struct sockaddr*) &client_addr, client_addrlen) < 0)
             {
                 perror("[ERRO] Erro no envio de datagrama");
@@ -173,10 +185,10 @@ void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_a
 
         case MLM:
             //alterar as regras
-            game_rules.maxj = buffer_dgram.arg1.j;
-            game_rules.maxt = buffer_dgram.arg2.t;
+            global_game_rules.maxj = buffer_dgram.arg1.j;
+            global_game_rules.maxt = buffer_dgram.arg2.t;
 
-            printf("[AVISO] Regras alteradas globalmente: jmax=%d tmax=%d\n", game_rules.maxj, game_rules.maxt);
+            printf("[AVISO] Regras globais alteradas: jmax=%d tmax=%d\n", global_game_rules.maxj, global_game_rules.maxt);
             
             sprintf(buffer_send, "Game rules changed.\n");
             if(sendto(sd, buffer_send, strlen(buffer_send), 0, (struct sockaddr*) &client_addr, client_addrlen) < 0)
@@ -211,7 +223,7 @@ void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_a
 
 void* thread_func_gameinstance(void* game_info)
 {   
-    new_game_info info = (*(new_game_info*) game_info);
+    new_game_info info = (*(new_game_info*) game_info); //TODO: why not just use the struct directly? instead of creating new variables
     coms_t buffer_stream = info.buffer_s;
     int game_number = info.game_number;
     int socket = info.sd;

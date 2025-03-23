@@ -34,3 +34,6 @@ JMM_server.exe: servidor_build/servidor.o servidor_build/core_gameplay.o ../incl
 
 #test: log_server_test.c log_server.h
 #	$(CC) $(CFLAGS) $< -o $@.exe
+
+clean:
+	rm -rf servidor_build/*.o *.exe
