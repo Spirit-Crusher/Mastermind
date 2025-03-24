@@ -15,6 +15,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <sys/syscall.h>
+#include <mqueue.h>
 
 /****************** Defines *******************/
 #define NJMAX 4                    /* número máximo de jogadores em simultâneo */
