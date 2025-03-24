@@ -8,7 +8,7 @@ pthread_t thread_gameinstance[NJMAX]; //acho que isto pode ser local ao acceptga
 game_t* game_instances[NJMAX] = { 0 };
 struct sockaddr_un client_addr;
 socklen_t client_addrlen; //não será igual ao server_addrlen? (acho que posso eliminar esta variável e passar o server_addrlen para addrlen)
-rules_t global_game_rules = { .maxj = MAXNJ, .maxt = MAXT * 1 }; //! por em segundos??
+rules_t global_game_rules = { .maxj = MAXNJ, .maxt = MAXT * 60 };
 bool ledger_on = true;
 char log_server[] = "../log_server/JMM_log.exe";
 
@@ -78,14 +78,14 @@ void analise_move(game_t* game_pt)
     {
         // jogador sem mais tentativas, perdeu
         game_pt->log.tf = time(NULL);   //! btw, jogos perdidos não são guardados no log
-        game_pt->game_state = PLAYER_LOST;
+        game_pt->game_state = PLAYER_LOST_TRIES;
         printf("[INFO] O jogador perdeu por falta de TENTATIVAS\n");
     }
     else if (difftime(time(NULL), game_pt->log.ti) >= game_pt->game_rules.maxt)
     {
         // jogador sem mais tempo, perdeu
         game_pt->log.tf = time(NULL);   //! btw, jogos perdidos não são guardados no log
-        game_pt->game_state = PLAYER_LOST;
+        game_pt->game_state = PLAYER_LOST_TIME;
         printf("[INFO] O jogador perdeu por falta de TEMPO\n");
     }
     else
@@ -300,10 +300,19 @@ void* thread_func_gameinstance(void* game_info)
                 }
                 break;
 
-            case PLAYER_LOST:
+            case PLAYER_LOST_TIME:
                 //informar jogador da derrota
-                printf("[INFO] O jogador perdeu\n");
-                if (write(socket, GAME_LOST, strlen(GAME_LOST) + 1) < 0)
+                printf("[INFO] O jogador perdeu(tempo)\n");
+                if (write(socket, GAME_LOST_TIME, strlen(GAME_LOST_TIME) + 1) < 0)
+                {
+                    perror("[ERRO] Erro no envio de stream");
+                }
+                break;
+
+            case PLAYER_LOST_TRIES:
+                //informar jogador da derrota
+                printf("[INFO] O jogador perdeu(tentativas)\n");
+                if (write(socket, GAME_LOST_TRIES, strlen(GAME_LOST_TRIES) + 1) < 0)
                 {
                     perror("[ERRO] Erro no envio de stream");
                 }
