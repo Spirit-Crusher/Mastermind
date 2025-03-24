@@ -15,9 +15,10 @@ char log_server[] = "../log_server/JMM_log.exe";
 
 void exit_handler()
 {
-    exit(0);
-    unlink(JMMSERVSS);
     unlink(JMMSERVSD);
+    unlink(JMMSERVSS);
+
+    exit(0);
 }
 
 /*####################################################### analise_move ######################################################*/
