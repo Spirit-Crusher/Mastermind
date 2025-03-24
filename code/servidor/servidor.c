@@ -13,6 +13,8 @@ bool ledger_on = true;
 char log_server[] = "../log_server/JMM_log.exe";
 
 
+/*####################################################### exit_handler ######################################################*/
+
 void exit_handler()
 {
     unlink(JMMSERVSD);
@@ -223,7 +225,7 @@ void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_a
 
 
 /*####################################################### save_game ######################################################*/
-save_game(rjg_t log) 
+void save_game(rjg_t log) 
 {
     int mqids;
 
