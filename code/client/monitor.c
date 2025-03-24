@@ -5,19 +5,16 @@
 |        from an original by Leendert Van Doorn
 | Data:  Nov 2002
 ***************************************************************************/
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <ctype.h>
+#include "cliente.h"
 
 
 /*-------------------------------------------------------------------------+
 | Headers of command functions
 +--------------------------------------------------------------------------*/ 
 
-       void cmd_sos  (int, char** );
-extern void cmd_sair (int, char** );
-extern void cmd_test (int, char** );
+       void cmd_sos  (int, char**);
+extern void cmd_sair (int, char**);
+extern void cmd_test (int, char**);
 extern void cmd_cnj  (int, char**);
 extern void cmd_jg   (int, char**);
 extern void cmd_clm  (int, char**);
@@ -101,9 +98,44 @@ int my_getline (char** argv, int argvsize){
 
 
 /*-------------------------------------------------------------------------+
+| Function: create_sock     após início da execução, criar socket datagrama
++--------------------------------------------------------------------------*/ 
+DATAGRAM create_sock(void){
+  DATAGRAM datsock;
+  char mypid[6];
+
+  if((datsock.sd_datagram = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0 ){     // tenta criar um socket datagrama
+    perror("[ERRO] Criação de socket datagrama falhou. Tentar Novamente. \n");
+    // close(sd_stream);
+    return;     // volta para a "linha de comandos"
+  }
+    
+  datsock.my_addr_d.sun_family = AF_UNIX;
+  memset(datsock.my_addr_d.sun_path, 0, sizeof(datsock.my_addr_d.sun_path));
+  strcpy(datsock.my_addr_d.sun_path, CLINAME);
+  sprintf(mypid, "%d", getpid());
+  strcat(datsock.my_addr_d.sun_path, mypid);      // junta o path dos clientes com o pid criando um identificador único
+  datsock.addrlen_d = sizeof(datsock.my_addr_d.sun_family) + strlen(datsock.my_addr_d.sun_path);
+  
+  if(bind(datsock.sd_datagram, (struct sockaddr *)&datsock.my_addr_d, datsock.addrlen_d) < 0 ){
+    perror("[ERRO] Bind do socket datagrama. Tentar novamente. \n");
+    // close(sd_stream); 
+    return;     // volta para a "linha de comandos"
+  }
+
+  datsock.to_d.sun_family = AF_UNIX;
+  memset(datsock.to_d.sun_path, 0, sizeof(datsock.to_d.sun_path));
+  strcpy(datsock.to_d.sun_path, JMMSERVSD);
+  datsock.tolen_d = sizeof(datsock.my_addr_d.sun_family) + strlen(datsock.to_d.sun_path);
+
+  return datsock;
+}
+
+
+/*-------------------------------------------------------------------------+
 | Function: monitor        (called from main) 
 +--------------------------------------------------------------------------*/ 
-void monitor(void){
+void monitor(DATAGRAM datsock){
   static char *argv[ARGVECSIZE + 1], *p;
   int argc, i;
 

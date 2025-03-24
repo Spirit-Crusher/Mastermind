@@ -6,23 +6,9 @@
 ***************************************************************************/
 #pragma pack(1)
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
+#include "cliente.h"
 
-#define DIMPLAY1 20
-#define DIMPLAY2 20
-#define CLINAME "/tmp/CLI"
-#define JMMLOGSD "/tmp/JMMLOGS"    /* nome do registo histórico (socket datagram) */
-#define JMMSERVSD "/tmp/JMMSERVSD" /* nome do servidor de jogo (socket datagram) */
-#define JMMSERVSS "/tmp/JMMSERVSS" /* nome do servidor de jogo (socket stream) */
-
+extern DATAGRAM datsock;
 
 // VARIÁVEIS GLOBAIS
 unsigned short int dif;
@@ -60,6 +46,7 @@ typedef struct {
     unsigned short int n;
     time_t t;
   } arg2;
+  
 } coms_t;
 
 
@@ -94,8 +81,8 @@ typedef struct {
 +--------------------------------------------------------------------------*/ 
 void cmd_sair (int argc, char **argv){        // POSSO FAZER close(..) ou unlink(..) A COISAS QUE NÃO EXISTEM? OU SEJA SD AINDA NÃO TINHA SIDO CRIADO P.E.
   close(sd_stream);
-  unlink(my_addr_d.sun_path);
-  close(sd_datagram);
+  unlink(datsock.my_addr_d.sun_path);
+  close(datsock.sd_datagram);
   exit(0);
 }
 /*-------------------------------------------------------------------------*/
@@ -105,7 +92,7 @@ void cmd_sair (int argc, char **argv){        // POSSO FAZER close(..) ou unlink
 | Function: cmd_cnj - criar novo jogo
 +--------------------------------------------------------------------------*/
 void cmd_cnj (int argc, char** argv){
-  char mypid[6];
+  // char mypid[6];
   char buf_s[50];
   char buf_d[50];
   coms_t coms_msg;         // struct para realizar o envio dos comandos para o servidor
@@ -151,7 +138,7 @@ void cmd_cnj (int argc, char** argv){
       }
 
     /*----------------------criar-socket-datagrama----------------------*/
-      if((sd_datagram = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0 ){     // tenta criar um socket datagrama
+      /*if((sd_datagram = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0 ){     // tenta criar um socket datagrama
         perror("[ERRO] Criação de socket datagrama falhou. Tentar Novamente. \n");
         close(sd_stream);
         return;     // volta para a "linha de comandos"
@@ -174,7 +161,7 @@ void cmd_cnj (int argc, char** argv){
       memset(to_d.sun_path, 0, sizeof(to_d.sun_path));
       strcpy(to_d.sun_path, JMMSERVSD);
       tolen_d = sizeof(my_addr_d.sun_family) + strlen(to_d.sun_path);
-  
+      */
       /*
       if(sendto(sd_datagram, MSG, strlen(MSG) + 1, 0, (struct sockaddr *)&to_d, tolen_d) < 0){
         perror("CLI: Erro no sendto");
@@ -264,17 +251,17 @@ void cmd_jg (int argc, char** argv){
 /*-------------------------------------------------------------------------+
 | Function: cmd_clm - consultar limites
 +--------------------------------------------------------------------------*/
-void cmd_clm (int argc, char** argv){
-  char requested_info[15];
+void cmd_clm (int argc, char** argv, DATAGRAM){
+  char requested_info[30];
   coms_t cmd_msg;
 
   cmd_msg.command = CLM;
 
-  if(sendto(sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&to_d, tolen_d) < 0){
+  if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&datsock.to_d, datsock.tolen_d) < 0){
     printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \n");
     return;       // volta para a "linha de comandos"
   }else{
-    if(recvfrom(sd_datagram, requested_info, sizeof(requested_info), 0, (struct sockaddr *)&to_d, &tolen_d) < 0){
+    if(recvfrom(datsock.sd_datagram, requested_info, sizeof(requested_info), 0, (struct sockaddr *)&datsock.to_d, &datsock.tolen_d) < 0){
       printf("[ERRO] Receção de informação do servidor. Tentar novamente. \n");
       return;     // volta para a "linha de comandos"                                            
     }else{
@@ -288,7 +275,7 @@ void cmd_clm (int argc, char** argv){
 /*-------------------------------------------------------------------------+
 | Function: cmd_mlm - mudar limites
 +--------------------------------------------------------------------------*/
-void cmd_mlm (int argc, char** argv){
+void cmd_mlm (int argc, char** argv, DATAGRAM){
   bool xflag;
   coms_t cmd_msg;
 
@@ -296,11 +283,11 @@ void cmd_mlm (int argc, char** argv){
     if((atoi(argv[1]) > 0) && ((atoi(argv[2])) > 0)){
       cmd_msg.command = MLM; cmd_msg.arg1.j = atoi(argv[1]); cmd_msg.arg2.t = atoi(argv[2]);
       
-      if(sendto(sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&to_d, tolen_d) < 0){
+      if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&datsock.to_d, datsock.tolen_d) < 0){
         printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \n");   // envio falhou
         return;     // volta para a "linha de comandos"
       }else{                                                                          /* ALGO DO GÉNERO "PEDIDO CONCEBIDO. NOVOS LIMITES: ..." */
-        if(recvfrom(sd_datagram, &xflag, sizeof(xflag), 0, (struct sockaddr *)&to_d, &tolen_d) < 0){
+        if(recvfrom(datsock.sd_datagram, &xflag, sizeof(xflag), 0, (struct sockaddr *)&datsock.to_d, &datsock.tolen_d) < 0){
           printf("[ERRO] Receção de informação do servidor. Tentar novamente. \n");     // receção falhou
           return;     // volta para a "linha de comandos"                                            
         }else{
@@ -320,17 +307,17 @@ void cmd_mlm (int argc, char** argv){
 /*-------------------------------------------------------------------------+
 | Function: cmd_cer - consultar estado
 +--------------------------------------------------------------------------*/
-void cmd_cer (int argc, char** argv){
+void cmd_cer (int argc, char** argv, DATAGRAM){
   bool xflag;
   coms_t cmd_msg;
 
   cmd_msg.command = CER;
 
-  if(sendto(sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&to_d, tolen_d) < 0){
+  if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&datsock.to_d, datsock.tolen_d) < 0){
     printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \n");
     return;       // volta para a "linha de comandos"
   }else{
-    if(recvfrom(sd_datagram, &xflag, sizeof(xflag), 0, (struct sockaddr *)&to_d, &tolen_d) < 0){
+    if(recvfrom(datsock.sd_datagram, &xflag, sizeof(xflag), 0, (struct sockaddr *)&datsock.to_d, &datsock.tolen_d) < 0){
       printf("[ERRO] Receção de informação do servidor. Tentar novamente. \n");
       return;     // volta para a "linha de comandos"                                            
     }else{
@@ -344,13 +331,13 @@ void cmd_cer (int argc, char** argv){
 /*-------------------------------------------------------------------------+
 | Function: cmd_aer - activar envio
 +--------------------------------------------------------------------------*/
-void cmd_aer (int argc, char** argv){
+void cmd_aer (int argc, char** argv, DATAGRAM){
   bool xflag;
   coms_t cmd_msg;
 
   cmd_msg.command = DER;
 
-  if(sendto(sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&to_d, tolen_d) < 0){
+  if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&datsock.to_d, datsock.tolen_d) < 0){
     printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \n");
     return;       // volta para a "linha de comandos"
   }else{
@@ -371,17 +358,17 @@ void cmd_aer (int argc, char** argv){
 /*-------------------------------------------------------------------------+
 | Function: cmd_der - desactivar envio
 +--------------------------------------------------------------------------*/
-void cmd_der (int argc, char** argv){
+void cmd_der (int argc, char** argv, DATAGRAM){
   bool xflag;
   coms_t cmd_msg;
 
   cmd_msg.command = DER;
 
-  if(sendto(sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&to_d, tolen_d) < 0){
+  if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&datsock.to_d, datsock.tolen_d) < 0){
     printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \n");
     return;       // volta para a "linha de comandos"
   }else{
-    if(recvfrom(sd_datagram, &xflag, sizeof(xflag), 0, (struct sockaddr *)&to_d, &tolen_d) < 0){
+    if(recvfrom(datsock.sd_datagram, &xflag, sizeof(xflag), 0, (struct sockaddr *)&datsock.to_d, &datsock.tolen_d) < 0){
       printf("[ERRO] Receção de informação do servidor. Tentar novamente. \n");
       return;     // volta para a "linha de comandos"                                            
     }else{
@@ -398,9 +385,9 @@ void cmd_der (int argc, char** argv){
 /*-------------------------------------------------------------------------+
 | Function: cmd_tmm - terminar processo mastermind, matar servidor
 +--------------------------------------------------------------------------*/
-void cmd_tmm (int argc, char** argv){
+void cmd_tmm (int argc, char** argv, DATAGRAM){
   coms_t cmd_msg = {.command = TMM};
-  if(sendto(sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&to_d, tolen_d) < 0)
+  if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&datsock.to_d, datsock.tolen_d) < 0)
   {
     printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \n");
     return;       // volta para a "linha de comandos"
@@ -416,7 +403,7 @@ void cmd_tmm (int argc, char** argv){
 /*-------------------------------------------------------------------------+
 | Function: cmd_ltc - listar classificações
 +--------------------------------------------------------------------------*/
-void cmd_ltc (int argc, char** argv){
+void cmd_ltc (int argc, char** argv, DATAGRAM){
   log_single_tab_t msg_tab_recieved;
   msg_to_JMMlog msg_sent;
 
@@ -489,7 +476,7 @@ void cmd_ltc (int argc, char** argv){
 /*-------------------------------------------------------------------------+
 | Function: cmd_rtc - reiniciar tabelas de classificação
 +--------------------------------------------------------------------------*/
-void cmd_rtc(int argc, char** argv){
+void cmd_rtc(int argc, char** argv, DATAGRAM){
   log_single_tab_t msg_tab_recieved;
   msg_to_JMMlog msg_sent;
 
@@ -562,7 +549,7 @@ void cmd_rtc(int argc, char** argv){
 /*-------------------------------------------------------------------------+
 | Function: cmd_trh - terminar processo de registo histórico
 +--------------------------------------------------------------------------*/
-void cmd_trh (int argc, char** argv){
+void cmd_trh (int argc, char** argv, DATAGRAM){
   printf("1");
 }
 /*-------------------------------------------------------------------------*/

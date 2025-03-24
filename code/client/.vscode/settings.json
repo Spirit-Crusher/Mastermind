@@ -3,6 +3,9 @@
         "client.h": "c",
         "string.h": "c",
         "socket.h": "c",
-        "types.h": "c"
+        "types.h": "c",
+        "stdbool.h": "c",
+        "cliente.h": "c",
+        "un.h": "c"
     }
 }
