@@ -9,7 +9,8 @@ game_t* game_instances[NJMAX] = {0};
 struct sockaddr_un client_addr;
 socklen_t client_addrlen; //não será igual ao server_addrlen? (acho que posso eliminar esta variável e passar o server_addrlen para addrlen)
 rules_t global_game_rules = {.maxj = MAXNJ, .maxt = MAXT*1}; //! por em segundos??
-
+bool ledger_on = true;
+char log_server = "";
 
 void exit_handler()
 {

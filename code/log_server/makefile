@@ -17,17 +17,17 @@ ifeq ($(DEBUG), 1)
 endif
 
 # Default TARGET
-default: ./MMJ_log.exe
+default: ./JMM_log.exe
 
 # Run Default TARGET
 run: default
-	./MMJ_log.exe
+	./JMM_log.exe
 
 log_server_build/log_server.o: log_server.c log_server.h ../include/mastermind.h
 	@mkdir -p log_server_build
 	$(CC) $(CFLAGS) -c $< -o $@
 
-./MMJ_log.exe: log_server_build/log_server.o
+./JMM_log.exe: log_server_build/log_server.o
 #	@mkdir -p bin
 	$(CC) $^ -o $@
 
