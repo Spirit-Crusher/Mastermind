@@ -10,7 +10,8 @@ struct sockaddr_un client_addr;
 socklen_t client_addrlen; //não será igual ao server_addrlen? (acho que posso eliminar esta variável e passar o server_addrlen para addrlen)
 rules_t global_game_rules = { .maxj = MAXNJ, .maxt = MAXT * 1 }; //! por em segundos??
 bool ledger_on = true;
-//char log_server = ""; //! slbcliuebcuulieef
+char log_server[] = "../log_server/JMM_log.exe";
+
 
 void exit_handler()
 {
@@ -60,8 +61,6 @@ void analise_move(game_t* game_pt)
     // guardar nº de respostas certas no sítio certo/errado
     game_pt->nb = nb;
     game_pt->np = np;
-
-    // decrementar o nº de jogadas que faltam
 
     // verificar se o jogo acabou
     if (np == game_pt->n_char)
@@ -175,61 +174,66 @@ void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_a
 
     switch (buffer_dgram.command)
     {
-    case CLM:
-        //enviar regras globais atuais
-        sprintf(buffer_send, "%d:%d", global_game_rules.maxj, global_game_rules.maxt);
-        if (sendto(sd, buffer_send, strlen(buffer_send), 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
-        {
-            perror("[ERRO] Erro no envio de datagrama");
-        }
-        break;
+        case CLM:
+            //enviar regras globais atuais
+            sprintf(buffer_send, "%d:%d", global_game_rules.maxj, global_game_rules.maxt);
+            if (sendto(sd, buffer_send, strlen(buffer_send), 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
+            {
+                perror("[ERRO] Erro no envio de datagrama");
+            }
+            break;
 
-    case MLM:
-        //alterar as regras
-        global_game_rules.maxj = buffer_dgram.arg1.j;
-        global_game_rules.maxt = buffer_dgram.arg2.t;
+        case MLM:
+            //alterar as regras
+            global_game_rules.maxj = buffer_dgram.arg1.j;
+            global_game_rules.maxt = buffer_dgram.arg2.t;
 
-        printf("[AVISO] Regras globais alteradas: jmax=%d tmax=%d\n", global_game_rules.maxj, global_game_rules.maxt);
+            printf("[AVISO] Regras globais alteradas: jmax=%d tmax=%d\n", global_game_rules.maxj, global_game_rules.maxt);
 
-        sprintf(buffer_send, "Game rules changed.\n");
-        if (sendto(sd, buffer_send, strlen(buffer_send), 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
-        {
-            perror("[ERRO] Erro no envio de datagrama");
-        }
-        break;
+            sprintf(buffer_send, "Game rules changed.\n");
+            if (sendto(sd, buffer_send, strlen(buffer_send), 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
+            {
+                perror("[ERRO] Erro no envio de datagrama");
+            }
+            break;
 
-    case CER:
-        //code
-        break;
+        case CER:
+            //code
+            break;
 
-    case AER:
-        //code
-        break;
+        case AER:
+            ledger_on = true;
+            break;
 
-    case DER:
-        //code
-        break;
+        case DER:
+            ledger_on = false;
+            break;
 
-    case TMM:
-        exit_handler();
-        break;
+        case TMM:
+            exit_handler();
+            break;
 
-    default:
-        break;
+        default:
+            break;
     }
 }
 
-/*####################################################### thread_func_gameinstance ######################################################*/
-save_game(rjg_t log) {
+
+/*####################################################### save_game ######################################################*/
+save_game(rjg_t log) 
+{
     int mqids;
-    if ((mqids = mq_open(JMMLOGQ, O_RDWR)) < 0) {
-        perror("Cliente: Erro a associar a queue servidor");
-        
+
+    while ((mqids = mq_open(JMMLOGQ, O_RDWR)) < 0) 
+    {
+        perror("[ERRO] Erro a associar a queue servidor\n");
+        system(log_server); //se falhou começar log_server
+
     }
 
-
-    if (mq_send(mqids, (char*)&log, sizeof(log), 0) < 0) {
-        perror("[ERRO] Cliente: erro a enviar mensagem");
+    if (mq_send(mqids, (char*)&log, sizeof(log), 0) < 0) 
+    {
+        perror("[ERRO] Erro a enviar mensagem\n");
     }
 }
 
@@ -281,47 +285,47 @@ void* thread_func_gameinstance(void* game_info)
 
         switch (current_game->game_state)
         {
-        case ONGOING:
-            //mostrar resultado da jogada
-            sprintf(result, "nb:%d np:%d", current_game->nb, current_game->np);
-            printf("Resultado da jogada: %s\n", result);
-            if (write(socket, result, strlen(result) + 1) < 0)
-            {
-                perror("[ERRO] Erro no envio de stream");
-            }
-            break;
+            case ONGOING:
+                //mostrar resultado da jogada
+                sprintf(result, "nb:%d np:%d", current_game->nb, current_game->np);
+                printf("Resultado da jogada: %s\n", result);
+                if (write(socket, result, strlen(result) + 1) < 0)
+                {
+                    perror("[ERRO] Erro no envio de stream");
+                }
+                break;
 
-        case PLAYER_LOST:
-            //informar jogador da derrota
-            printf("[INFO] O jogador perdeu\n");
-            if (write(socket, GAME_LOST, strlen(GAME_LOST) + 1) < 0)
-            {
-                perror("[ERRO] Erro no envio de stream");
-            }
-            break;
+            case PLAYER_LOST:
+                //informar jogador da derrota
+                printf("[INFO] O jogador perdeu\n");
+                if (write(socket, GAME_LOST, strlen(GAME_LOST) + 1) < 0)
+                {
+                    perror("[ERRO] Erro no envio de stream");
+                }
+                break;
 
-        case PLAYER_WIN:
-            //informar jogador da vitória
-            printf("[INFO] O jogador ganhou\n");
-            if (ledger_on == true) {
-                //enviar log para o cliente
-                save_game(current_game->log);
-                printf("[INFO] Ledger ligado. Jogo guardado\n");
-            }
-            else printf("[INFO] Ledger desligado\n");
+            case PLAYER_WIN:
+                //informar jogador da vitória
+                printf("[INFO] O jogador ganhou\n");
+                if (ledger_on == true) {
+                    //enviar log para o cliente
+                    save_game(current_game->log);
+                    printf("[INFO] Ledger ligado. Jogo guardado\n");
+                }
+                else printf("[INFO] Ledger desligado\n");
 
-            if (write(socket, GAME_WON, strlen(GAME_WON) + 1) < 0)
-            {
-                perror("[ERRO] Erro no envio de stream");
-            }
-            break;
+                if (write(socket, GAME_WON, strlen(GAME_WON) + 1) < 0)
+                {
+                    perror("[ERRO] Erro no envio de stream");
+                }
+                break;
 
-        default:
-            if (write(socket, GAME_CRASHED, strlen(GAME_CRASHED) + 1) < 0)
-            {
-                perror("[ERRO] Erro no envio de stream");
-            }
-            break;
+            default:
+                if (write(socket, GAME_CRASHED, strlen(GAME_CRASHED) + 1) < 0)
+                {
+                    perror("[ERRO] Erro no envio de stream");
+                }
+                break;
         }
 
     } while (current_game->game_state == ONGOING);
