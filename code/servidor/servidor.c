@@ -66,6 +66,10 @@ void analise_move(game_t* game_pt)
     // guardar nº de respostas certas no sítio certo/errado
     game_pt->nb = nb;
     game_pt->np = np;
+    
+    //DEBUG 
+    printf("[INFO] Time = %ld. Inicial = %ld. Máx = %d\n", time(NULL), game_pt->log.ti, game_pt->game_rules.maxt);
+    printf("[INFO] Diff time: %lf\n",difftime(time(NULL), game_pt->log.ti));
 
     // verificar se o jogo acabou
     if (np == game_pt->n_char)
