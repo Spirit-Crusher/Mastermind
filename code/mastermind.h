@@ -1,3 +1,5 @@
+#pragma once
+
 /****************** Includes *******************/
 #include <stdio.h>
 #include <time.h>

@@ -1,4 +1,4 @@
-#include "mastermind.h"
+#include "../mastermind.h"
 
 
 // por este linha na main::
