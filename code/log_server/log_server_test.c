@@ -251,11 +251,11 @@ void print_table(const log_tabs_t *log, int table_id) {
 
 
 int main() {
-    test_datagram_ltc();
+    //test_datagram_ltc();
     //test_datagram_rtc();
     //test_datagram_trh();
-    int verbose = 1; queue_test_add_game(verbose);
-    //int verbose = 1; test_print_memory(verbose);
+    //int verbose = 1; queue_test_add_game(verbose);
+    int verbose = 1; test_print_memory(verbose);
 
 
     return 0;

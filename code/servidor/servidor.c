@@ -20,8 +20,15 @@ void exit_handler()
     unlink(JMMSERVSD);
     unlink(JMMSERVSS);
 
+    for (int i = 0; i < NJMAX; ++i)
+    {
+        free(game_instances[i]);
+        game_instances[i] = NULL;
+    }
+
     exit(0);
 }
+
 
 /*####################################################### analise_move ######################################################*/
 
@@ -31,6 +38,15 @@ void analise_move(game_t* game_pt)
     unsigned short int used_secret[MAX_SEQUENCE_SIZE] = { false };
     unsigned short int used_guess[MAX_SEQUENCE_SIZE] = { false };
     int i;
+
+    if ((game_pt->elapsed_time = difftime(time(NULL), game_pt->log.ti)) >= game_pt->game_rules.maxt)
+    {
+        // jogador sem mais tempo, perdeu
+        game_pt->log.tf = time(NULL);
+        game_pt->game_state = PLAYER_LOST_TIME;
+        printf("[INFO] O jogador perdeu por falta de TEMPO\n");
+        return;
+    }
 
     // incrementar o nº de jogadas
     game_pt->log.nt++;
@@ -81,16 +97,9 @@ void analise_move(game_t* game_pt)
     else if (game_pt->game_rules.maxj <= game_pt->log.nt)
     {
         // jogador sem mais tentativas, perdeu
-        game_pt->log.tf = time(NULL);   //! btw, jogos perdidos não são guardados no log
+        game_pt->log.tf = time(NULL);
         game_pt->game_state = PLAYER_LOST_TRIES;
         printf("[INFO] O jogador perdeu por falta de TENTATIVAS\n");
-    }
-    else if (difftime(time(NULL), game_pt->log.ti) >= game_pt->game_rules.maxt)
-    {
-        // jogador sem mais tempo, perdeu
-        game_pt->log.tf = time(NULL);   //! btw, jogos perdidos não são guardados no log
-        game_pt->game_state = PLAYER_LOST_TIME;
-        printf("[INFO] O jogador perdeu por falta de TEMPO\n");
     }
     else
     {   // jogo continua
@@ -179,7 +188,7 @@ void stream_handler(int socket, game_t* game, coms_t buffer_stream)
 
 void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_addrlen)
 {
-    char buffer_send[50]; //buffer para mensagem de resposta
+    char buffer_send[100]; //buffer para mensagem de resposta
 
     switch (buffer_dgram.command)
     {
@@ -207,15 +216,34 @@ void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_a
             break;
 
         case CER:
-            //code
+            if (ledger_on)
+            {
+                sprintf(buffer_send, "[INFO] Registo está ativo\n");
+            }
+            else sprintf(buffer_send, "[INFO] Registo está inativo\n");
+
+            if (sendto(sd, buffer_send, strlen(buffer_send), 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
+            {
+                perror("[ERRO] Erro no envio de datagrama");
+            }    
             break;
 
         case AER:
             ledger_on = true;
+            sprintf(buffer_send, "[INFO] Registo ativado com sucesso\n");
+            if (sendto(sd, buffer_send, strlen(buffer_send), 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
+            {
+                perror("[ERRO] Erro no envio de datagrama");
+            }    
             break;
 
         case DER:
             ledger_on = false;
+            sprintf(buffer_send, "[INFO] Registo desativado com sucesso\n");
+            if (sendto(sd, buffer_send, strlen(buffer_send), 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
+            {
+                perror("[ERRO] Erro no envio de datagrama");
+            }
             break;
 
         case TMM:
@@ -229,6 +257,7 @@ void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_a
 
 
 /*####################################################### save_game ######################################################*/
+
 void save_game(rjg_t log) 
 {
     int mqids;
@@ -256,7 +285,7 @@ void* thread_func_gameinstance(void* game_info)
     int game_number = info.game_number;
     int socket = info.sd;
     //int stream = info.sock_stream;
-    char result[strlen(MOVE_REGISTERED) + 8 + 1]; //!melhorar isto
+    char result[100]; //!melhorar isto
 
     printf("[INFO] Esta é a socket e o game number do novo jogador: %d:%d\n", socket, game_number);
 
@@ -296,7 +325,7 @@ void* thread_func_gameinstance(void* game_info)
         {
             case ONGOING:
                 //mostrar resultado da jogada
-                sprintf(result, "nb:%d np:%d", current_game->nb, current_game->np);
+                sprintf(result, "nb:%d np:%d time_left:%.0f \n", current_game->nb, current_game->np, current_game->game_rules.maxt - current_game->elapsed_time);
                 printf("Resultado da jogada: %s\n", result);
                 if (write(socket, result, strlen(result) + 1) < 0)
                 {
@@ -324,6 +353,11 @@ void* thread_func_gameinstance(void* game_info)
 
             case PLAYER_WIN:
                 //informar jogador da vitória
+                if (write(socket, GAME_WON, strlen(GAME_WON) + 1) < 0)
+                {
+                    perror("[ERRO] Erro no envio de stream");
+                }
+                
                 printf("[INFO] O jogador ganhou\n");
                 if (ledger_on == true) {
                     //enviar log para o cliente
@@ -331,11 +365,6 @@ void* thread_func_gameinstance(void* game_info)
                     printf("[INFO] Ledger ligado. Jogo guardado\n");
                 }
                 else printf("[INFO] Ledger desligado\n");
-
-                if (write(socket, GAME_WON, strlen(GAME_WON) + 1) < 0)
-                {
-                    perror("[ERRO] Erro no envio de stream");
-                }
                 break;
 
             default:

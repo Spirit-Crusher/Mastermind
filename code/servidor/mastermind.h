@@ -94,6 +94,8 @@ typedef struct // variável de estado do jogo
   
   rules_t game_rules; // regras do jogo //! novo
 
+  double elapsed_time;
+
   int sd; //socket descriptor associado a este jogador
   struct sockaddr_un player_addr; //address do cliente
   socklen_t addr_len; //comprimento do address
