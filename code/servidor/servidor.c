@@ -195,7 +195,7 @@ void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_a
         case CLM:
             //enviar regras globais atuais
             sprintf(buffer_send, "%d:%d", global_game_rules.maxj, global_game_rules.maxt);
-            if (sendto(sd, buffer_send, strlen(buffer_send), 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
+            if (sendto(sd, buffer_send, strlen(buffer_send)+1, 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
             {
                 perror("[ERRO] Erro no envio de datagrama");
             }
@@ -209,44 +209,48 @@ void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_a
             printf("[AVISO] Regras globais alteradas: jmax=%d tmax=%d\n", global_game_rules.maxj, global_game_rules.maxt);
 
             sprintf(buffer_send, "Game rules changed.\n");
-            if (sendto(sd, buffer_send, strlen(buffer_send), 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
+            if (sendto(sd, buffer_send, strlen(buffer_send)+1, 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
             {
                 perror("[ERRO] Erro no envio de datagrama");
             }
             break;
 
         case CER:
+            //consultar se registo está ou não ativo
             if (ledger_on)
             {
                 sprintf(buffer_send, "[INFO] Registo está ativo\n");
             }
             else sprintf(buffer_send, "[INFO] Registo está inativo\n");
 
-            if (sendto(sd, buffer_send, strlen(buffer_send), 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
+            if (sendto(sd, buffer_send, strlen(buffer_send)+1, 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
             {
                 perror("[ERRO] Erro no envio de datagrama");
             }    
             break;
 
         case AER:
+            //ativar registo
             ledger_on = true;
             sprintf(buffer_send, "[INFO] Registo ativado com sucesso\n");
-            if (sendto(sd, buffer_send, strlen(buffer_send), 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
+            if (sendto(sd, buffer_send, strlen(buffer_send)+1, 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
             {
                 perror("[ERRO] Erro no envio de datagrama");
             }    
             break;
 
         case DER:
+            //desativar registo
             ledger_on = false;
             sprintf(buffer_send, "[INFO] Registo desativado com sucesso\n");
-            if (sendto(sd, buffer_send, strlen(buffer_send), 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
+            if (sendto(sd, buffer_send, strlen(buffer_send)+1, 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
             {
                 perror("[ERRO] Erro no envio de datagrama");
             }
             break;
 
         case TMM:
+            //ordem para sair
             exit_handler();
             break;
 
