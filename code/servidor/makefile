@@ -28,7 +28,7 @@ servidor_build/core_gameplay.o: core_gameplay.c core_gameplay.h
 	@mkdir -p servidor_build
 	$(CC) $(CFLAGS) -c $< -o $@
 
-JMM_server.exe: servidor_build/servidor.o servidor_build/core_gameplay.o ../include/mastermind.h
+JMM_server.exe: servidor_build/servidor.o servidor_build/core_gameplay.o ../mastermind.h
 #	@mkdir -p bin
 	$(CC) $^ -o $@
 

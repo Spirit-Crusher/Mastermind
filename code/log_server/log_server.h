@@ -10,7 +10,7 @@
 #include <stdbool.h>
 
 
-#include "../include/mastermind.h"  //! tornar o resto assim
+#include "../mastermind.h"  //! tornar o resto assim
 
 #include <stdlib.h>
 #include <unistd.h>

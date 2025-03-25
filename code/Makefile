@@ -5,7 +5,7 @@ CC = gcc
 DEBUG_FLAGS = -g -O0
 
 # Compilation flags
-CFLAGS = -Wall -Wextra -std=c11 -Iinclude -Iservidor
+CFLAGS = -Wall -Wextra -std=c11 -Iservidor
 
 # Conditional Debug Mode
 ifeq ($(DEBUG), 1)
@@ -17,11 +17,11 @@ endif
 # Default TARGET
 all: servidor/MMJ_server.exe log_server/MMJ_log.exe
 
-servidor/MMJ_server.exe: servidor/servidor_build/servidor.o servidor/servidor_build/core_gameplay.o include/mastermind.h
+servidor/MMJ_server.exe: servidor/servidor_build/servidor.o servidor/servidor_build/core_gameplay.o mastermind.h
 #	$(CC) $^ -o $@
 	cd ./servidor && make
 
-log_server/MMJ_log.exe: log_server/log_server_build/log_server.o log_server/log_server.h include/mastermind.h
+log_server/MMJ_log.exe: log_server/log_server_build/log_server.o log_server/log_server.h mastermind.h
 #	$(CC) $^ -o $@
 	cd ./log_server && make
 

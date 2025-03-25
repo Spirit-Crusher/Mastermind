@@ -1,6 +1,7 @@
 #pragma pack(1)
 
-#include "mastermind.h"
+
+#include "servidor.h"
 
 coms_t buffer_dgram; //posso usar só 1 buffer com mutex I think mas acho que ia tornar tudo mais lento sem necessidade e o prof não especifica
 pthread_t thread_acceptgames;
@@ -199,9 +200,7 @@ void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_a
             {
                 perror("[ERRO] Erro no envio de datagrama");
             }
-            break;
-
-        case MLM:
+            break;        case MLM:
             //alterar as regras
             global_game_rules.maxj = buffer_dgram.arg1.j;
             global_game_rules.maxt = buffer_dgram.arg2.t;

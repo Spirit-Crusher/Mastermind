@@ -23,7 +23,7 @@ default: ./JMM_log.exe
 run: default
 	./JMM_log.exe
 
-log_server_build/log_server.o: log_server.c log_server.h ../include/mastermind.h
+log_server_build/log_server.o: log_server.c log_server.h ../mastermind.h
 	@mkdir -p log_server_build
 	$(CC) $(CFLAGS) -c $< -o $@
 
