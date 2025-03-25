@@ -23,7 +23,7 @@ socklen_t addrlen_d;
 struct sockaddr_un to_d;
 struct sockaddr_un my_addr_d;
 
-
+// chaves para os comandos existentes
 typedef enum {
   CNJ, JG, CLM,
   MLM, CER, AER,
@@ -31,7 +31,7 @@ typedef enum {
   RTC, TRH
 } commands_t;
 
-
+// conjunto de combinações possíveis dos comandos
 typedef struct {
   commands_t command;
   
@@ -56,6 +56,7 @@ typedef enum{
     DIFF_2,
 } game_diff_t;
 
+
 typedef struct {            /* estrutura de um registo de jogo */
     int nd;                 /* nível de dificuldade do jogo */
     char nj[4];             /* nome do jogador (3 carateres) */
@@ -64,12 +65,14 @@ typedef struct {            /* estrutura de um registo de jogo */
     time_t tf;              /* estampilha temporal fim do jogo */
 } rjg_t;
 
+
 typedef struct {
   rjg_t tb[10];
   int tb_n_games;
   int tb_diff;
 } log_single_tab_t;
 
+// mensagens para o servidor de registo
 typedef struct {
   char cmd[5];               // tamanho máximo dos comandos é 4
   int arg_n;                 // valor do argumento "n"
@@ -80,9 +83,11 @@ typedef struct {
 | Function: cmd_sair - termina a aplicacao
 +--------------------------------------------------------------------------*/ 
 void cmd_sair (int argc, char **argv){        // POSSO FAZER close(..) ou unlink(..) A COISAS QUE NÃO EXISTEM? OU SEJA SD AINDA NÃO TINHA SIDO CRIADO P.E.
+  printf("[INFO] A sair: \n");
   close(sd_stream);
   unlink(datsock.my_addr_d.sun_path);
   close(datsock.sd_datagram);
+  printf("[INFO] Saída realizada com sucesso. להתראות!\n\n");
   exit(0);
 }
 /*-------------------------------------------------------------------------*/
@@ -94,23 +99,22 @@ void cmd_sair (int argc, char **argv){        // POSSO FAZER close(..) ou unlink
 void cmd_cnj (int argc, char** argv){
   // char mypid[6];
   char buf_s[50];
-  char buf_d[50];
+  // char buf_d[50];
   coms_t coms_msg;         // struct para realizar o envio dos comandos para o servidor
   
-  if(argc != 3){    // comando + nome + dificuldade
-    printf("[ERRO] Número de argumentos inválido. Tentar novamente. \n\n");
-    return;     // volta para a "linha de comandos"
+  if(argc != 3){           // comando + nome + dificuldade
+    printf("[ERRO] Número de argumentos inválido. Tentar novamente.\n");
+    return;                // volta para a "linha de comandos"
   }
 
   if(strlen(argv[1]) != 3){     // nome com 3 chars
-    printf("\n\n[ERRO] Nome inválido! Introduzir no máximo 3 caracteres.\n\n");
-    return;     // volta para a "linha de comandos"
+    printf("[ERRO] Nome inválido! Introduzir no máximo 3 caracteres.\n");
+    return;                // volta para a "linha de comandos"
   }else{
-    if((atoi(argv[2]) > 0.5) && (atoi(argv[2]) < 2.5)){
+    if((atoi(argv[2]) == 1) || (atoi(argv[2]) == 2)){
       dif = atoi(argv[2]);
 
-      /*-----------------------criar-socket-stream------------------------*/
-      if((sd_stream = socket(AF_UNIX, SOCK_STREAM, 0)) < 0 ){  // tenta criar socket
+      if((sd_stream = socket(AF_UNIX, SOCK_STREAM, 0)) < 0 ){  // tenta criar socket stream
         perror("[ERRO] Criação de socket stream falhou. Tentar novamente. \n"); 
         return;     // volta para a "linha de comandos"
       }
@@ -136,43 +140,6 @@ void cmd_cnj (int argc, char** argv){
         while(read(sd_stream, buf_s, sizeof(buf_s)) < 0);
         printf("[INFO] Cliente recebeu confirmação: %s\n", buf_s);      
       }
-
-    /*----------------------criar-socket-datagrama----------------------*/
-      /*if((sd_datagram = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0 ){     // tenta criar um socket datagrama
-        perror("[ERRO] Criação de socket datagrama falhou. Tentar Novamente. \n");
-        close(sd_stream);
-        return;     // volta para a "linha de comandos"
-      }
-        
-      my_addr_d.sun_family = AF_UNIX;
-      memset(my_addr_d.sun_path, 0, sizeof(my_addr_d.sun_path));
-      strcpy(my_addr_d.sun_path, CLINAME);
-      sprintf(mypid, "%d", getpid());
-      strcat(my_addr_d.sun_path, mypid);      // junta o path dos clientes com o pid criando um identificador único
-      addrlen_d = sizeof(my_addr_d.sun_family) + strlen(my_addr_d.sun_path);
-      
-      if(bind(sd_datagram, (struct sockaddr *)&my_addr_d, addrlen_d) < 0 ){
-        perror("[ERRO] Bind do socket datagrama. Tentar novamente. \n");
-        close(sd_stream); 
-        return;     // volta para a "linha de comandos"
-      }
-  
-      to_d.sun_family = AF_UNIX;
-      memset(to_d.sun_path, 0, sizeof(to_d.sun_path));
-      strcpy(to_d.sun_path, JMMSERVSD);
-      tolen_d = sizeof(my_addr_d.sun_family) + strlen(to_d.sun_path);
-      */
-      /*
-      if(sendto(sd_datagram, MSG, strlen(MSG) + 1, 0, (struct sockaddr *)&to_d, tolen_d) < 0){
-        perror("CLI: Erro no sendto");
-      }else{
-        if(recvfrom(sd_datagram, buf_d, sizeof(buf_d), 0, (struct sockaddr *)&to_d, &tolen_d) < 0){
-          perror("CLI: Erro no recvfrom");                                            
-        }else{
-          printf("CLI: Recebi: %s\n", buf_d);
-        }
-      }
-      */
     }else{
       printf("[ERRO] Nível de dificuldade (%d) inválido! Inserir dificuldade: 1 ou 2.\n\n", dif);
       return;
@@ -192,57 +159,62 @@ void cmd_jg (int argc, char** argv){
   char val2_play[DIMPLAY2];
   coms_t cmd_msg;
 
-  if(dif == 1){
-    if(strlen(argv[1]) != 3){
-      printf("[ERRO] Repetir jogada! Introduzir 3 letras (de {ABCDE})");
-      return;
-    }
-
-    strcpy(val1_play, argv[1]);
-    for(aux = 0; aux < strlen(val1_play); aux++){
-      xua = val1_play[aux];
-      if(!((xua == 'A') || (xua == 'B') || (xua == 'C') || (xua == 'D') || (xua == 'E'))){
-        // printf("OLA!!!");
+  if((sd_stream > 0) || (datsock.sd_datagram > 0)){
+    if(dif == 1){
+      if(strlen(argv[1]) != 3){
         printf("[ERRO] Repetir jogada! Introduzir 3 letras (de {ABCDE})");
         return;
       }
-    }
 
-    cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);         // atribui dados a enviar, na estrutura de dados
+      strcpy(val1_play, argv[1]);
+      for(aux = 0; aux < strlen(val1_play); aux++){
+        xua = val1_play[aux];
+        if(!((xua == 'A') || (xua == 'B') || (xua == 'C') || (xua == 'D') || (xua == 'E'))){
+          // printf("OLA!!!");
+          printf("[ERRO] Repetir jogada! Introduzir 3 letras (de {ABCDE})");
+          return;
+        }
+      }
 
-    if((write(sd_stream, &cmd_msg, sizeof(cmd_msg)) < 0)){
-      perror("[ERRO] Write para o servidor. Tentar novamente. \n");
-      return;
-    }else{
-      while(read(sd_stream, val1_play, sizeof(val1_play)) < 0);       // espera até receber
-      printf("[INFO] Jogada: %s\n", val1_play);                       // jogada
-    }
-  }
+      cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);         // atribui dados a enviar, na estrutura de dados
 
-  if(dif == 2){
-    if(strlen(argv[1]) != 5){
-      printf("[ERRO] Repetir jogada! Introduzir 5 letras (de {ABCDEFGH})");
-      return;
-    }
-
-    strcpy(val2_play, argv[1]);
-    for(aux = 0; aux < strlen(val2_play); aux++){
-      xua = val2_play[aux];
-      if(!((xua == 'A') || (xua == 'B') || (xua == 'C') || (xua == 'D') || (xua == 'E') || (xua == 'F') || (xua == 'G') || (xua == 'H'))){
-        printf("[ERRO] Repetir jogada! Introduzir 5 letras (de {ABCDEFGH})");
+      if((write(sd_stream, &cmd_msg, sizeof(cmd_msg)) < 0)){
+        perror("[ERRO] Write para o servidor. Tentar novamente. \n");
         return;
+      }else{
+        while(read(sd_stream, val1_play, sizeof(val1_play)) < 0);       // espera até receber
+        printf("[INFO] Jogada: %s\n", val1_play);                       // jogada
       }
     }
 
-    cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);
+    if(dif == 2){
+      if(strlen(argv[1]) != 5){
+        printf("[ERRO] Repetir jogada! Introduzir 5 letras (de {ABCDEFGH})");
+        return;
+      }
 
-    if((write(sd_stream, &cmd_msg, sizeof(cmd_msg)) < 0)){
-      perror("[ERRO] Write para o servidor. Tentar novamente.\n");
-      return;
-    }else{
-      while(read(sd_stream, val2_play, sizeof(val2_play)) < 0);
-      printf("[INFO] Jogada: %s\n", val2_play);      
+      strcpy(val2_play, argv[1]);
+      for(aux = 0; aux < strlen(val2_play); aux++){
+        xua = val2_play[aux];
+        if(!((xua == 'A') || (xua == 'B') || (xua == 'C') || (xua == 'D') || (xua == 'E') || (xua == 'F') || (xua == 'G') || (xua == 'H'))){
+          printf("[ERRO] Repetir jogada! Introduzir 5 letras (de {ABCDEFGH})");
+          return;
+        }
+      }
+
+      cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);
+
+      if((write(sd_stream, &cmd_msg, sizeof(cmd_msg)) < 0)){
+        perror("[ERRO] Write para o servidor. Tentar novamente.\n");
+        return;
+      }else{
+        while(read(sd_stream, val2_play, sizeof(val2_play)) < 0);
+        printf("[INFO] Jogada: %s\n", val2_play);      
+      }
     }
+  }else{
+    printf("[ERRO] Jogo não inicializado, tentar novamente.\n");
+    return;
   }
 }
 /*-------------------------------------------------------------------------*/
@@ -254,6 +226,12 @@ void cmd_jg (int argc, char** argv){
 void cmd_clm (int argc, char** argv, DATAGRAM){
   char requested_info[30];
   coms_t cmd_msg;
+
+  // definir o destinatário como o JMMserv
+  datsock.to_d.sun_family = AF_UNIX;
+  memset(datsock.to_d.sun_path, 0, sizeof(datsock.to_d.sun_path));
+  strcpy(datsock.to_d.sun_path, JMMSERVSD);
+  datsock.tolen_d = sizeof(datsock.my_addr_d.sun_family) + strlen(datsock.to_d.sun_path);
 
   cmd_msg.command = CLM;
 
@@ -278,6 +256,12 @@ void cmd_clm (int argc, char** argv, DATAGRAM){
 void cmd_mlm (int argc, char** argv, DATAGRAM){
   bool xflag;
   coms_t cmd_msg;
+
+  // definir o destinatário como o JMMserv
+  datsock.to_d.sun_family = AF_UNIX;
+  memset(datsock.to_d.sun_path, 0, sizeof(datsock.to_d.sun_path));
+  strcpy(datsock.to_d.sun_path, JMMSERVSD);
+  datsock.tolen_d = sizeof(datsock.my_addr_d.sun_family) + strlen(datsock.to_d.sun_path);
 
   if(argc == 3){
     if((atoi(argv[1]) > 0) && ((atoi(argv[2])) > 0)){
@@ -308,8 +292,14 @@ void cmd_mlm (int argc, char** argv, DATAGRAM){
 | Function: cmd_cer - consultar estado
 +--------------------------------------------------------------------------*/
 void cmd_cer (int argc, char** argv, DATAGRAM){
-  bool xflag;
   coms_t cmd_msg;
+  char cer_msg[60];
+
+  // definir o destinatário como o JMMserv
+  datsock.to_d.sun_family = AF_UNIX;
+  memset(datsock.to_d.sun_path, 0, sizeof(datsock.to_d.sun_path));
+  strcpy(datsock.to_d.sun_path, JMMSERVSD);
+  datsock.tolen_d = sizeof(datsock.my_addr_d.sun_family) + strlen(datsock.to_d.sun_path); 
 
   cmd_msg.command = CER;
 
@@ -317,11 +307,11 @@ void cmd_cer (int argc, char** argv, DATAGRAM){
     printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \n");
     return;       // volta para a "linha de comandos"
   }else{
-    if(recvfrom(datsock.sd_datagram, &xflag, sizeof(xflag), 0, (struct sockaddr *)&datsock.to_d, &datsock.tolen_d) < 0){
+    if(recvfrom(datsock.sd_datagram, cer_msg, sizeof(cer_msg), 0, (struct sockaddr *)&datsock.to_d, &datsock.tolen_d) < 0){
       printf("[ERRO] Receção de informação do servidor. Tentar novamente. \n");
       return;     // volta para a "linha de comandos"                                            
     }else{
-      printf("[INFO] Envio de registos para o histórico: %s", xflag ? "true" : "false");
+      printf("%s", cer_msg);
     }
   }
 }
@@ -332,23 +322,26 @@ void cmd_cer (int argc, char** argv, DATAGRAM){
 | Function: cmd_aer - activar envio
 +--------------------------------------------------------------------------*/
 void cmd_aer (int argc, char** argv, DATAGRAM){
-  bool xflag;
   coms_t cmd_msg;
+  char aer_msg[60];
 
-  cmd_msg.command = DER;
+  // definir o destinatário como o JMMserv
+  datsock.to_d.sun_family = AF_UNIX;
+  memset(datsock.to_d.sun_path, 0, sizeof(datsock.to_d.sun_path));
+  strcpy(datsock.to_d.sun_path, JMMSERVSD);
+  datsock.tolen_d = sizeof(datsock.my_addr_d.sun_family) + strlen(datsock.to_d.sun_path); 
+
+  cmd_msg.command = AER;
 
   if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&datsock.to_d, datsock.tolen_d) < 0){
     printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \n");
     return;       // volta para a "linha de comandos"
   }else{
-    if(recvfrom(sd_datagram, &xflag, sizeof(xflag), 0, (struct sockaddr *)&to_d, &tolen_d) < 0){
+    if(recvfrom(datsock.sd_datagram, aer_msg, sizeof(aer_msg), 0, (struct sockaddr *)&datsock.to_d, &datsock.tolen_d) < 0){
       printf("[ERRO] Receção de informação do servidor. Tentar novamente. \n");
       return;     // volta para a "linha de comandos"                                            
     }else{
-      if(xflag)
-        printf("[INFO] Informação recebida: REGISTO HISTÓRICO FOI ATIVADO \n");
-      else
-        printf("[INFO] Informação recebida: REGISTO HISTÓRICO NÃO FOI ATIVADO \n");
+      printf("%s", aer_msg);
     }
   }
 }
@@ -359,8 +352,14 @@ void cmd_aer (int argc, char** argv, DATAGRAM){
 | Function: cmd_der - desactivar envio
 +--------------------------------------------------------------------------*/
 void cmd_der (int argc, char** argv, DATAGRAM){
-  bool xflag;
   coms_t cmd_msg;
+  char der_msg[60];
+
+  // definir o destinatário como o JMMserv
+  datsock.to_d.sun_family = AF_UNIX;
+  memset(datsock.to_d.sun_path, 0, sizeof(datsock.to_d.sun_path));
+  strcpy(datsock.to_d.sun_path, JMMSERVSD);
+  datsock.tolen_d = sizeof(datsock.my_addr_d.sun_family) + strlen(datsock.to_d.sun_path); 
 
   cmd_msg.command = DER;
 
@@ -368,14 +367,12 @@ void cmd_der (int argc, char** argv, DATAGRAM){
     printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \n");
     return;       // volta para a "linha de comandos"
   }else{
-    if(recvfrom(datsock.sd_datagram, &xflag, sizeof(xflag), 0, (struct sockaddr *)&datsock.to_d, &datsock.tolen_d) < 0){
+    if(recvfrom(datsock.sd_datagram, der_msg, sizeof(der_msg), 0, (struct sockaddr *)&datsock.to_d, &datsock.tolen_d) < 0){
       printf("[ERRO] Receção de informação do servidor. Tentar novamente. \n");
       return;     // volta para a "linha de comandos"                                            
     }else{
-      if(xflag)
-        printf("[INFO] Informação recebida: REGISTO HISTÓRICO FOI DESATIVADO \n");
-      else
-        printf("[INFO] Informação recebida: REGISTO HISTÓRICO NÃO FOI DESATIVADO \n");
+      printf("%ld", strlen(der_msg));
+      printf("%s", der_msg);
     }
   }
 }
@@ -387,8 +384,14 @@ void cmd_der (int argc, char** argv, DATAGRAM){
 +--------------------------------------------------------------------------*/
 void cmd_tmm (int argc, char** argv, DATAGRAM){
   coms_t cmd_msg = {.command = TMM};
-  if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&datsock.to_d, datsock.tolen_d) < 0)
-  {
+
+  // definir o destinatário como o JMMserv
+  datsock.to_d.sun_family = AF_UNIX;
+  memset(datsock.to_d.sun_path, 0, sizeof(datsock.to_d.sun_path));
+  strcpy(datsock.to_d.sun_path, JMMSERVSD);
+  datsock.tolen_d = sizeof(datsock.my_addr_d.sun_family) + strlen(datsock.to_d.sun_path);
+
+  if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr *)&datsock.to_d, datsock.tolen_d) < 0){
     printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \n");
     return;       // volta para a "linha de comandos"
   }

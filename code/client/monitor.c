@@ -107,7 +107,7 @@ DATAGRAM create_sock(void){
   if((datsock.sd_datagram = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0 ){     // tenta criar um socket datagrama
     perror("[ERRO] Criação de socket datagrama falhou. Tentar Novamente. \n");
     // close(sd_stream);
-    return;     // volta para a "linha de comandos"
+    exit(-1);     // volta para a "linha de comandos"
   }
     
   datsock.my_addr_d.sun_family = AF_UNIX;
@@ -120,13 +120,22 @@ DATAGRAM create_sock(void){
   if(bind(datsock.sd_datagram, (struct sockaddr *)&datsock.my_addr_d, datsock.addrlen_d) < 0 ){
     perror("[ERRO] Bind do socket datagrama. Tentar novamente. \n");
     // close(sd_stream); 
-    return;     // volta para a "linha de comandos"
+    exit(-1);     // volta para a "linha de comandos"
   }
 
-  datsock.to_d.sun_family = AF_UNIX;
-  memset(datsock.to_d.sun_path, 0, sizeof(datsock.to_d.sun_path));
-  strcpy(datsock.to_d.sun_path, JMMSERVSD);
-  datsock.tolen_d = sizeof(datsock.my_addr_d.sun_family) + strlen(datsock.to_d.sun_path);
+  /*
+  if(sendto(sd_datagram, MSG, strlen(MSG) + 1, 0, (struct sockaddr *)&to_d, tolen_d) < 0){
+    perror("CLI: Erro no sendto");
+  }else{
+    if(recvfrom(sd_datagram, buf_d, sizeof(buf_d), 0, (struct sockaddr *)&to_d, &tolen_d) < 0){
+      perror("CLI: Erro no recvfrom");                                            
+    }else{
+      printf("CLI: Recebi: %s\n", buf_d);
+    }
+  }
+  */
+
+  printf("[INFO] Socket datagrama criado. Comunicações com o histórico ativas.\n");
 
   return datsock;
 }
