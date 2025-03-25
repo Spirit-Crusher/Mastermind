@@ -1,5 +1,4 @@
-#include "../mastermind.h"
-
+#include "core_gameplay.h"
 
 // por este linha na main::
 //! -> srand(time(NULL));
