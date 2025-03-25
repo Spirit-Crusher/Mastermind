@@ -118,12 +118,12 @@ void test_datagram_ltc() {
     memset(to.sun_path, 0, sizeof(to.sun_path));
     strcpy(to.sun_path, JMMLOGSD);
     tolen = sizeof(my_addr.sun_family) + strlen(to.sun_path);
-    msg_to_JMMlog msg_sent = { .cmd = "ltc", .arg_n = DIFF_1 }; ////////////////////! aqui
+    coms_t msg_sent = { .command = LTC, .arg1.n = DIFF_1 }; ////////////////////! aqui
     if (sendto(socket_d, &msg_sent, sizeof(msg_sent), 0, (struct sockaddr*)&to, tolen) < 0) {
         perror("teste: Erro no sendto");
     }
     else {
-        switch (msg_sent.arg_n)
+        switch (msg_sent.arg1.n)
         {
         case DIFF_ALL:
             if (recvfrom(socket_d, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&to, &tolen) < 0) perror("teste: Erro no recvfrom");
@@ -176,7 +176,7 @@ void test_datagram_rtc() {
     memset(to.sun_path, 0, sizeof(to.sun_path));
     strcpy(to.sun_path, JMMLOGSD);
     tolen = sizeof(my_addr.sun_family) + strlen(to.sun_path);
-    msg_to_JMMlog msg_sent = { .cmd = "rtc", .arg_n = DIFF_ALL }; ////////////////////! aqui
+    coms_t msg_sent = { .command = RTC, .arg1.n = DIFF_1 }; ////////////////////! aqui
     if (sendto(socket_d, &msg_sent, sizeof(msg_sent), 0, (struct sockaddr*)&to, tolen) < 0) {
         perror("teste: Erro no sendto");
     }
@@ -213,7 +213,7 @@ void test_datagram_trh() {
     memset(to.sun_path, 0, sizeof(to.sun_path));
     strcpy(to.sun_path, JMMLOGSD);
     tolen = sizeof(my_addr.sun_family) + strlen(to.sun_path);
-    msg_to_JMMlog msg_sent = { .cmd = "trh" }; ////////////////////! aqui
+    coms_t msg_sent = { .command = TRH, .arg1.n = DIFF_1 }; ////////////////////! aqui
     if (sendto(socket_d, &msg_sent, sizeof(msg_sent), 0, (struct sockaddr*)&to, tolen) < 0) {
         perror("teste: Erro no sendto");
     }

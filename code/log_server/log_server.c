@@ -46,7 +46,7 @@ int main()
   socklen_t addrlen;
   struct sockaddr_un from;
   socklen_t fromlen;
-  msg_to_JMMlog msg_recieved;
+  coms_t msg_recieved;
 
   log_single_tab_t msg_tab_send;
 
@@ -97,14 +97,14 @@ int main()
     fromlen = sizeof(from);
     if (recvfrom(socket_d, &msg_recieved, sizeof(msg_recieved), 0, (struct sockaddr*)&from, &fromlen) < 0)    perror("Erro no recvfrom");
     else {
-      printf("SERV: Recebi: cmd=%s n=%i Path: %s\n", msg_recieved.cmd, msg_recieved.arg_n, from.sun_path);
+      printf("SERV: Recebi: cmd=%i n=%d Path: %s\n", msg_recieved.command, msg_recieved.arg1.n, from.sun_path);
 
       //************** - ltc: listar tabela(s) classificação nível n (0-todos)
-      if (strcmp(msg_recieved.cmd, "ltc") == 0) {
-        printf("listar tabela(s) classificação nível n=%i\n", msg_recieved.arg_n);
+      if (msg_recieved.command == LTC) {
+        printf("listar tabela(s) classificação nível n=%i\n", msg_recieved.arg1.n);
 
         pthread_mutex_lock(&file_mux);  //entra na zona critical
-        switch (msg_recieved.arg_n) {
+        switch (msg_recieved.arg1.n) {
         case DIFF_ALL:
           get_tab_n(&msg_tab_send, DIFF_1);
           if (sendto(socket_d, &msg_tab_send, sizeof(log_single_tab_t), 0, (struct sockaddr*)&from, fromlen) < 0) perror("Erro no sendto\n");
@@ -112,11 +112,11 @@ int main()
           if (sendto(socket_d, &msg_tab_send, sizeof(log_single_tab_t), 0, (struct sockaddr*)&from, fromlen) < 0) perror("Erro no sendto\n");
           break;
         case DIFF_1:
-          get_tab_n(&msg_tab_send, msg_recieved.arg_n);
+          get_tab_n(&msg_tab_send, msg_recieved.arg1.n);
           if (sendto(socket_d, &msg_tab_send, sizeof(log_single_tab_t), 0, (struct sockaddr*)&from, fromlen) < 0) perror("Erro no sendto\n");
           break;
         case DIFF_2:
-          get_tab_n(&msg_tab_send, msg_recieved.arg_n);
+          get_tab_n(&msg_tab_send, msg_recieved.arg1.n);
           if (sendto(socket_d, &msg_tab_send, sizeof(log_single_tab_t), 0, (struct sockaddr*)&from, fromlen) < 0) perror("Erro no sendto\n");
           break;
         default:
@@ -126,15 +126,15 @@ int main()
         pthread_mutex_unlock(&file_mux);  //sair da zona crítica
       }
       //************** - rtc: reinicializar tabela(s) classificação nível n (0-todos)
-      else if (strcmp(msg_recieved.cmd, "rtc") == 0) {
-        printf("reinicializar tabela(s) classificação nível n=%i\n", msg_recieved.arg_n);
+      else if (msg_recieved.command == RTC) {
+        printf("reinicializar tabela(s) classificação nível n=%i\n", msg_recieved.arg1.n);
         pthread_mutex_lock(&file_mux);  //entra na zona critical
-        del_tab_n(msg_recieved.arg_n);
+        del_tab_n(msg_recieved.arg1.n);
         pthread_mutex_unlock(&file_mux);  //sair da zona crítica
       }
 
       //************** - trh: terminar processo de registo histórico (JMMlog)
-      else if (strcmp(msg_recieved.cmd, "trh") == 0) {
+      else if (msg_recieved.command == TRH) {
         printf("terminar processo de registo histórico (JMMlog)\n");
         termination_handler();
       }
