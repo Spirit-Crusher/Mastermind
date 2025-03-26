@@ -326,4 +326,6 @@ void del_tab_n(int diff) {
     printf("del_tab_n: difficuldade inválida\n");
     break;
   }
+  msync(tabel_pt, MSIZE, MS_SYNC);
+  printf("[INFO] Ficheiro sincronizado\n");
 }
