@@ -1,5 +1,3 @@
-#pragma pack(1)
-
 #include "log_server.h"
 
 // Function to print a single rjg_t entry

@@ -4,7 +4,6 @@
 | Autor: Carlos Almeida (IST)
 | Data:  Nov 2002
 ***************************************************************************/
-#pragma pack(1)
 
 #include "cliente.h"
 

@@ -1,5 +1,3 @@
-#pragma pack(1)
-
 #include "log_server.h"
 #include <unistd.h>
 
@@ -29,6 +27,12 @@ void termination_handler()
   close(socket_d);
   unlink(JMMLOGSD);
   printf("termination_handler: Terminámos o socket datagram\n");
+
+  //fechar queue
+  if (mq_unlink(JMMLOGQ) < 0) {
+    perror("termination_handler: Erro a eliminar queue");
+  }
+  printf("termination_handler: queue eliminada de forma limpa\n");
 
   exit(0);
   return;
@@ -270,6 +274,8 @@ void insert_sorted_n(log_tabs_t* log, rjg_t new_game, game_diff_t diff) {
   // Insere o novo jogo na posição correta
   table[i] = new_game;
   (*n_games)++;
+  msync(log, MSIZE, MS_SYNC);
+  printf("[INFO] Ficheiro sincronizado\n");
 }
 
 

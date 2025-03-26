@@ -1,5 +1,3 @@
-#pragma pack(1)
-
 #include "servidor.h"
 
 coms_t buffer_dgram; //posso usar só 1 buffer com mutex I think mas acho que ia tornar tudo mais lento sem necessidade e o prof não especifica
@@ -10,7 +8,7 @@ struct sockaddr_un client_addr; //endereço do cliente
 socklen_t client_addrlen; //não será igual ao server_addrlen? (acho que posso eliminar esta variável e passar o server_addrlen para addrlen)
 rules_t global_game_rules = { .maxj = MAXNJ, .maxt = MAXT * 60 }; //criação e iniciaização das regras do jogo
 bool ledger_on = true; //usado para verificar se registo de jogos está ou não ativo
-char log_server[] = "../log_server/JMM_log.exe"; //caminho relativo para log_server
+char log_server[] = "../log_server/JMMlog"; //caminho relativo para log_server
 int sd_datagram; //socket descriptor do servidor para datagrama
 int sd_stream; //socket descriptor do servidor para stream
 
@@ -277,13 +275,22 @@ void save_game(rjg_t log)
 {
     int mqids;
 
-    while ((mqids = mq_open(JMMLOGQ, O_RDWR)) < 0) 
+    if ((mqids = mq_open(JMMLOGQ, O_RDWR)) < 0) 
     {
+        printf("[INFO] Vou fazer o system\n");
         perror("[ERRO] Erro a associar a queue servidor\n");
         system(log_server); //se falhou começar log_server
+        sleep(1);
+        printf("[INFO] Servidor iniciou log_server\n");
+
+        if ((mqids = mq_open(JMMLOGQ, O_RDWR)) < 0)
+        {
+            perror("[ERRO] Servidor não conseguiu abrir queue do log\n\a");
+        }
 
     }
 
+    printf("[INFO] A enviar jogo ao log_server, MQIDS:%d\n", mqids);
     if (mq_send(mqids, (char*)&log, sizeof(log), 0) < 0) 
     {
         perror("[ERRO] Erro a enviar mensagem\n");
@@ -374,7 +381,7 @@ void* thread_func_gameinstance(void* game_info)
                 }
                 
                 printf("[INFO] O jogador ganhou\n");
-                if (ledger_on == true) {
+                if (ledger_on) {
                     //enviar log para o cliente
                     save_game(current_game->log);
                     printf("[INFO] Ledger ligado. Jogo guardado\n");
