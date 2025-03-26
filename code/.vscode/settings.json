@@ -3,6 +3,7 @@
         "log_server.h": "c",
         "fcntl.h": "c",
         "typeinfo": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "cliente.h": "c"
     }
 }

@@ -1,10 +1,10 @@
 CC=gcc
 CFLAGS= -Wall
 
-OBJS= cliente.o comandos.o monitor.o
+OBJS= JMMapl.o comandos.o monitor.o
 
 cliente: $(OBJS)
-	$(CC) -o cliente $(OBJS)
+	$(CC) -o JMMapl $(OBJS)
 
 clean:
-	rm cliente $(OBJS)
+	rm JMMapl $(OBJS)

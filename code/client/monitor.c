@@ -11,7 +11,7 @@
 /*-------------------------------------------------------------------------+
 | Headers of command functions
 +--------------------------------------------------------------------------*/ 
-
+/*
        void cmd_sos  (int, char**);
 extern void cmd_sair (int, char**);
 extern void cmd_test (int, char**);
@@ -26,7 +26,7 @@ extern void cmd_tmm  (int, char**);
 extern void cmd_ltc  (int, char**);
 extern void cmd_rtc  (int, char**);
 extern void cmd_trh  (int, char**);
-
+*/
 
 /*-------------------------------------------------------------------------+
 | Variable and constants definition
@@ -57,9 +57,6 @@ const commands[] = {
   {cmd_trh, "trh","                   terminar processo de registo histórico (JMMlog)"}  
 };
 
-#define NCOMMANDS  (sizeof(commands)/sizeof(struct command_d))
-#define ARGVECSIZE 3
-#define MAX_LINE   50
 
 
 /*-------------------------------------------------------------------------+
@@ -106,7 +103,6 @@ DATAGRAM create_sock(void){
 
   if((datsock.sd_datagram = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0 ){     // tenta criar um socket datagrama
     perror("[ERRO] Criação de socket datagrama falhou. Tentar Novamente. \n");
-    // close(sd_stream);
     exit(-1);     // volta para a "linha de comandos"
   }
     
@@ -119,28 +115,15 @@ DATAGRAM create_sock(void){
   
   if(bind(datsock.sd_datagram, (struct sockaddr *)&datsock.my_addr_d, datsock.addrlen_d) < 0 ){
     perror("[ERRO] Bind do socket datagrama. Tentar novamente. \n");
-    // close(sd_stream); 
     exit(-1);     // volta para a "linha de comandos"
   }
-
-  /*
-  if(sendto(sd_datagram, MSG, strlen(MSG) + 1, 0, (struct sockaddr *)&to_d, tolen_d) < 0){
-    perror("CLI: Erro no sendto");
-  }else{
-    if(recvfrom(sd_datagram, buf_d, sizeof(buf_d), 0, (struct sockaddr *)&to_d, &tolen_d) < 0){
-      perror("CLI: Erro no recvfrom");                                            
-    }else{
-      printf("CLI: Recebi: %s\n", buf_d);
-    }
-  }
-  */
 
   printf("[INFO] Socket datagrama criado. Comunicações com o histórico ativas.\n");
 
   return datsock;
 }
 
-
+ 
 /*-------------------------------------------------------------------------+
 | Function: monitor        (called from main) 
 +--------------------------------------------------------------------------*/ 
