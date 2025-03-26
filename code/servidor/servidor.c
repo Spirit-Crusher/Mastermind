@@ -3,14 +3,16 @@
 #include "servidor.h"
 
 coms_t buffer_dgram; //posso usar só 1 buffer com mutex I think mas acho que ia tornar tudo mais lento sem necessidade e o prof não especifica
-pthread_t thread_acceptgames;
-pthread_t thread_gameinstance[NJMAX]; //acho que isto pode ser local ao acceptgames
-game_t* game_instances[NJMAX] = { 0 };
-struct sockaddr_un client_addr;
+pthread_t thread_acceptgames; //thread que aceita novos jogos
+pthread_t thread_gameinstance[NJMAX]; //threads responsáveis por gerir os vários jogos //!acho que isto pode ser local ao acceptgames
+game_t* game_instances[NJMAX] = { 0 }; //apontadores para jogos são guardados para poderem ser alterados
+struct sockaddr_un client_addr; //endereço do cliente
 socklen_t client_addrlen; //não será igual ao server_addrlen? (acho que posso eliminar esta variável e passar o server_addrlen para addrlen)
-rules_t global_game_rules = { .maxj = MAXNJ, .maxt = MAXT * 60 };
-bool ledger_on = true;
-char log_server[] = "../log_server/JMM_log.exe";
+rules_t global_game_rules = { .maxj = MAXNJ, .maxt = MAXT * 60 }; //criação e iniciaização das regras do jogo
+bool ledger_on = true; //usado para verificar se registo de jogos está ou não ativo
+char log_server[] = "../log_server/JMM_log.exe"; //caminho relativo para log_server
+int sd_datagram; //socket descriptor do servidor para datagrama
+int sd_stream; //socket descriptor do servidor para stream
 
 
 /*####################################################### exit_handler ######################################################*/
@@ -19,13 +21,20 @@ void exit_handler()
 {
     printf("[INFO] Exiting...\n");
 
+    close(sd_datagram);
+    close(sd_stream);
+
     unlink(JMMSERVSD);
     unlink(JMMSERVSS);
 
     for (int i = 0; i < NJMAX; ++i)
     {
-        free(game_instances[i]);
-        game_instances[i] = NULL;
+        if (game_instances[i] != NULL)
+        {
+            close(game_instances[i]->sd);  //!ALGUM DESTES DÁ SEGFAULT
+            free(game_instances[i]);
+            game_instances[i] = NULL;
+        }
     }
 
     exit(0);
@@ -397,7 +406,6 @@ void* thread_func_gameinstance(void* game_info)
 void* thread_func_acceptgames()
 {
     coms_t buffer_stream;
-    int sd_stream; //socket descriptor do servidor para stream
     int new_sock; //client specific socket descriptor
     struct sockaddr_un streamsv_addr;
     socklen_t streamsv_addrlen;
@@ -506,7 +514,6 @@ void* thread_func_acceptgames()
 
 int main()
 {
-    int sd_datagram; //socket descriptor do servidor para datagrama
     struct sockaddr_un dgramsv_addr;
     socklen_t dgramsv_addrlen;
 
