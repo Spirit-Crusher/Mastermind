@@ -206,7 +206,7 @@ void* queue_handler() {
 //void open_file(int* mfd_p, log_tabs_t** tabel_p) {
 void open_file() {
   /* abrir / criar ficheiro */
-  if ((mfd = open(FILE, O_RDWR | O_CREAT, 0666)) < 0) {
+  if ((mfd = open(JMMLOG, O_RDWR | O_CREAT, 0666)) < 0) {
     perror("Erro a criar ficheiro");
     exit(-1);
   }
