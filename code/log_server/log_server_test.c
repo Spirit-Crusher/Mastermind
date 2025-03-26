@@ -1,3 +1,5 @@
+#pragma pack(1)
+
 #include "log_server.h"
 
 // Function to print a single rjg_t entry
@@ -32,14 +34,13 @@ void print_log_tabs(const log_tabs_t* log, int verbose) {
 
 
 /***************************** test_print_memory *******************************/
-#define FILE "FICHEIRO.DAT"
 void test_print_memory(int verbose) {
 
     int mfd;
     log_tabs_t* tabel;
 
     /* abrir / criar ficheiro */
-    if ((mfd = open(FILE, O_RDWR | O_CREAT, 0666)) < 0) {
+    if ((mfd = open(JMMLOG, O_RDWR | O_CREAT, 0666)) < 0) {
         perror("Erro a criar ficheiro");
         exit(-1);
     }

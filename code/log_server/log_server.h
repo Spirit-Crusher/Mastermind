@@ -21,7 +21,6 @@
 
 
 /****************** Defines *******************/
-#define FILE "FICHEIRO.DAT"
 #define JMM_LOG_NCOMMANDS (sizeof(commands)/sizeof(struct command_d))
 #define MSIZE sizeof(log_tabs_t)    
 

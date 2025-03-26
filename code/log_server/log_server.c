@@ -1,7 +1,7 @@
+#pragma pack(1)
+
 #include "log_server.h"
 #include <unistd.h>
-
-
 
 /***************************** global variables *******************************/
 bool STATUS_ON = true;  // variável que avisa o programa se deve terminar ou não

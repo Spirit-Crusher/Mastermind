@@ -206,7 +206,7 @@ void cmd_jg (int argc, char** argv){
 /*-------------------------------------------------------------------------+
 | Function: cmd_clm - consultar limites
 +--------------------------------------------------------------------------*/
-void cmd_clm (int argc, char** argv, DATAGRAM){
+void cmd_clm (int argc, char** argv ){
   char requested_info[50];
   coms_t cmd_msg;
 
@@ -236,7 +236,7 @@ void cmd_clm (int argc, char** argv, DATAGRAM){
 /*-------------------------------------------------------------------------+
 | Function: cmd_mlm - mudar limites
 +--------------------------------------------------------------------------*/
-void cmd_mlm (int argc, char** argv, DATAGRAM){
+void cmd_mlm (int argc, char** argv ){
   char mlm_msg[50];
   coms_t cmd_msg;
 
@@ -274,7 +274,7 @@ void cmd_mlm (int argc, char** argv, DATAGRAM){
 /*-------------------------------------------------------------------------+
 | Function: cmd_cer - consultar estado
 +--------------------------------------------------------------------------*/
-void cmd_cer (int argc, char** argv, DATAGRAM){
+void cmd_cer (int argc, char** argv ){
   coms_t cmd_msg;
   char cer_msg[60];
 
@@ -304,7 +304,7 @@ void cmd_cer (int argc, char** argv, DATAGRAM){
 /*-------------------------------------------------------------------------+
 | Function: cmd_aer - activar envio
 +--------------------------------------------------------------------------*/
-void cmd_aer (int argc, char** argv, DATAGRAM){
+void cmd_aer (int argc, char** argv ){
   coms_t cmd_msg;
   char aer_msg[60];
 
@@ -334,7 +334,7 @@ void cmd_aer (int argc, char** argv, DATAGRAM){
 /*-------------------------------------------------------------------------+
 | Function: cmd_der - desactivar envio
 +--------------------------------------------------------------------------*/
-void cmd_der (int argc, char** argv, DATAGRAM){
+void cmd_der (int argc, char** argv ){
   coms_t cmd_msg;
   char der_msg[60];
 
@@ -364,7 +364,7 @@ void cmd_der (int argc, char** argv, DATAGRAM){
 /*-------------------------------------------------------------------------+
 | Function: cmd_tmm - terminar processo mastermind, matar servidor
 +--------------------------------------------------------------------------*/
-void cmd_tmm (int argc, char** argv, DATAGRAM){
+void cmd_tmm (int argc, char** argv ){
   coms_t cmd_msg = {.command = TMM};
 
   // definir o destinatário como o JMMserv
@@ -388,7 +388,7 @@ void cmd_tmm (int argc, char** argv, DATAGRAM){
 /*-------------------------------------------------------------------------+
 | Function: cmd_ltc - listar classificações
 +--------------------------------------------------------------------------*/
-void cmd_ltc (int argc, char** argv, DATAGRAM){
+void cmd_ltc (int argc, char** argv ){
   log_single_tab_t msg_tab_recieved;
   // msg_to_JMMlog msg_sent;
 
@@ -460,11 +460,12 @@ void cmd_ltc (int argc, char** argv, DATAGRAM){
 /*-------------------------------------------------------------------------+
 | Function: cmd_rtc - reiniciar tabelas de classificação
 +--------------------------------------------------------------------------*/
-void cmd_rtc(int argc, char** argv, DATAGRAM){
+void cmd_rtc(int argc, char** argv ){
   log_single_tab_t msg_tab_recieved;
   // msg_to_JMMlog msg_sent;
 
-  if((argc == 2) && (atoi(argv[1]) > 0) && (atoi(argv[1]) <= 2)){
+  if((argc == 2) && (atoi(argv[1]) >= 0) && (atoi(argv[1]) <= 2))
+  {
     coms_t cmd_msg = {.command = RTC, .arg1.n = atoi(argv[1])};
 
     // definir o destinatário como o JMMlogsd
@@ -473,58 +474,17 @@ void cmd_rtc(int argc, char** argv, DATAGRAM){
     strcpy(datsock.to_d.sun_path, JMMLOGSD);
     datsock.tolen_d = sizeof(datsock.my_addr_d.sun_family) + strlen(datsock.to_d.sun_path);
 
-    /*
-    if(atoi(argv[1]) == 0)
-      msg_sent.arg_n = DIFF_ALL;
-    else if(atoi(argv[1]) == 1)
-      msg_sent.arg_n = DIFF_1;
-    else if(atoi(argv[1]) == 2)
-      msg_sent.arg_n = DIFF_2;
-    else
-      printf("[ERRO INESPERADO]");
-    */
-
-    if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0) {
+    if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0) 
+    {
       perror("[ERRO] Envio de pedido para o servidor. Tentar novamente. \n");
-    }else{
-      switch(cmd_msg.arg1.n){
-        
-        case DIFF_ALL:
-          if(recvfrom(datsock.sd_datagram, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0)
-            perror("[ERRO] Receção de dados do servidor. Tentar novamente. \n");
-          else
-            printf("[INFO] Dados recebidos: diff=%i n_games=%i\n", msg_tab_recieved.tb_diff, msg_tab_recieved.tb_n_games);
-          
-          if(recvfrom(datsock.sd_datagram, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0)
-            perror("[ERRO] Receção de dados do servidor. Tentar novamente. \n");
-          else
-            printf("[INFO] Dados recebidos: diff=%i n_games=%i\n", msg_tab_recieved.tb_diff, msg_tab_recieved.tb_n_games);
-          break;
-
-        case DIFF_1:
-          if(recvfrom(datsock.sd_datagram, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0)
-            perror("[ERRO] Receção de dados do servidor. Tentar novamente. \n");
-          else
-            printf("[INFO] Dados recebidos: diff=%i n_games=%i\n", msg_tab_recieved.tb_diff, msg_tab_recieved.tb_n_games);
-          break;
-
-        case DIFF_2:
-          if(recvfrom(datsock.sd_datagram, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0)
-            perror("[ERRO] Receção de dados do servidor. Tentar novamente. \n");
-          else
-            printf("[INFO] Dados recebidos: diff=%i n_games=%i\n", msg_tab_recieved.tb_diff, msg_tab_recieved.tb_n_games);
-          break;
-
-        default:
-          printf("[ERRO] INESPERADO");
-          return;
-
-      }
     }
-  }else{
-    printf("[ERRO] Número inválido de argumentos. Tentar Novamente. \n");
-    return;
   }
+  else
+  {
+    printf("[ERRO] Número inválido de argumentos. Tentar Novamente. \n");
+  return;
+  }
+  
 }
 /*-------------------------------------------------------------------------*/
 
@@ -532,7 +492,7 @@ void cmd_rtc(int argc, char** argv, DATAGRAM){
 /*-------------------------------------------------------------------------+
 | Function: cmd_trh - terminar processo de registo histórico
 +--------------------------------------------------------------------------*/
-void cmd_trh (int argc, char** argv, DATAGRAM){
+void cmd_trh (int argc, char** argv ){
   coms_t cmd_msg = {.command = TRH};
 
   // definir o destinatário como o JMMlogsd

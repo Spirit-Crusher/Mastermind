@@ -3,7 +3,7 @@ CFLAGS= -Wall
 
 OBJS= JMMapl.o comandos.o monitor.o
 
-cliente: $(OBJS)
+JMMapl: $(OBJS)
 	$(CC) -o JMMapl $(OBJS)
 
 clean:
