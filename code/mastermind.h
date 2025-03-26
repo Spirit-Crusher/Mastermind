@@ -22,6 +22,7 @@
 #define NJMAX 4                    /* número máximo de jogadores em simultâneo */
 #define MAXNJ 10                  /* valor inicial do número máximo de jogadas (tentativas) */
 #define MAXT 5                     /* valor inicial do tempo máximo de jogo (minutos) */
+#define TOPN 10                    /* número de jogos a apresentar na tabela de classificação */
 #define JMMLOG "JOGOS.LOG"         /* ficheiro com registo histórico */
 #define JMMSERVSD "/tmp/JMMSERVSD" /* nome do servidor de jogo (socket datagram) */
 #define JMMSERVSS "/tmp/JMMSERVSS" /* nome do servidor de jogo (socket stream) */
@@ -64,6 +65,9 @@ typedef enum
   AER,
   DER,
   TMM,
+  LTC,
+  RTC,
+  TRH,
 } commands_t;
 
 /****************** Structs *******************/
@@ -92,7 +96,7 @@ typedef struct // variável de estado do jogo
   unsigned short int np;                    // número de letras certas no sítio certo
   unsigned short int nb;                    // número de letras certas no sítio errado<
   game_state_t game_state; // estado do jogo = {ONGOING,PLAYER_WIN,PLAYER_LOST} //! isto é usado?
-  
+
   rules_t game_rules; // regras do jogo //! novo
 
   double elapsed_time;
@@ -130,6 +134,11 @@ typedef struct
   coms_t buffer_s;
 } new_game_info;
 
+typedef struct {
+  rjg_t tb[10];
+  int tb_n_games;
+  int tb_diff;
+} log_single_tab_t;
 
 /***************************  Fuctions ***************************/
 void generate_key(char* key, game_diff_t level);

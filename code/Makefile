@@ -15,26 +15,26 @@ endif
 
 
 # Default TARGET
-all: servidor/MMJ_server.exe log_server/MMJ_log.exe
+all: servidor/JMMserv log_server/JMMlog
 
-servidor/MMJ_server.exe: servidor/servidor_build/servidor.o servidor/servidor_build/core_gameplay.o mastermind.h
+servidor/JMMserv: servidor/servidor_build/servidor.o servidor/servidor_build/core_gameplay.o mastermind.h
 #	$(CC) $^ -o $@
 	cd ./servidor && make
 
-log_server/MMJ_log.exe: log_server/log_server_build/log_server.o log_server/log_server.h mastermind.h
+log_server/JMMlog: log_server/log_server_build/log_server.o log_server/log_server.h mastermind.h
 #	$(CC) $^ -o $@
 	cd ./log_server && make
 
 
 
 # app server
-#run_s: ./servidor/MMJ_server.exe
-#	./servidor/MMJ_server.exe
+#run_s: ./servidor/JMMserv
+#	./servidor/JMMserv
 
 
 # run server
-run_s: ./servidor/MMJ_server.exe
-	./servidor/MMJ_server.exe
+run_s: ./servidor/JMMserv
+	./servidor/JMMserv
 
 # Clean build files
 clean:
