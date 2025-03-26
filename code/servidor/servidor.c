@@ -1,6 +1,5 @@
 #pragma pack(1)
 
-
 #include "servidor.h"
 
 coms_t buffer_dgram; //posso usar só 1 buffer com mutex I think mas acho que ia tornar tudo mais lento sem necessidade e o prof não especifica
@@ -18,6 +17,8 @@ char log_server[] = "../log_server/JMM_log.exe";
 
 void exit_handler()
 {
+    printf("[INFO] Exiting...\n");
+
     unlink(JMMSERVSD);
     unlink(JMMSERVSS);
 
@@ -200,7 +201,9 @@ void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_a
             {
                 perror("[ERRO] Erro no envio de datagrama");
             }
-            break;        case MLM:
+            break;        
+            
+        case MLM:
             //alterar as regras
             global_game_rules.maxj = buffer_dgram.arg1.j;
             global_game_rules.maxt = buffer_dgram.arg2.t;
@@ -507,6 +510,11 @@ int main()
     struct sockaddr_un dgramsv_addr;
     socklen_t dgramsv_addrlen;
 
+    //set signal
+    signal(SIGTERM, exit_handler); 
+    signal(SIGINT, exit_handler); 
+
+    //set seed
     srand(time(NULL));
 
     //iniciar thread aceita jogos
