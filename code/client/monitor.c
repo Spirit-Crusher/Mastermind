@@ -1,10 +1,3 @@
-/***************************************************************************
-| File: monitor.c
-|
-| Autor: Carlos Almeida (IST), from work by Jose Rufino (IST/INESC), 
-|        from an original by Leendert Van Doorn
-| Data:  Nov 2002
-***************************************************************************/
 #include "cliente.h"
 
 
