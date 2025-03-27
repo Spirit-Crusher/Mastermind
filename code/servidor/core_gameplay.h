@@ -8,7 +8,7 @@
 #include "../mastermind.h"
 #include <string.h>
 
-void generate_key(char *key, game_diff_t level);
-
+/***************************  Fuctions ***************************/
+void generate_key(char* key, game_diff_t level);
 
 #endif

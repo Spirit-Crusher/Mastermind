@@ -124,7 +124,7 @@ void analise_move(game_t* game_pt)
 void create_new_game(game_t* game, int socket, coms_t buffer_stream)
 {
     game->log.nd = buffer_stream.arg2.n; //dificuldade
-    strcpy(game->log.nj, buffer_stream.arg1.Name); //nome do jogador
+    strcpy(game->log.nj, buffer_stream.arg1.name); //nome do jogador
     game->log.nt = 0;
     game->log.ti = time(NULL);
     game->log.tf = NO_TIME_REGISTERED;
@@ -138,7 +138,7 @@ void create_new_game(game_t* game, int socket, coms_t buffer_stream)
     game->game_rules.maxt = global_game_rules.maxt;
 
     printf("\ndif: %d\n\n", buffer_stream.arg2.n);
-    printf("\nname: %s\n\n", buffer_stream.arg1.Name);
+    printf("\nname: %s\n\n", buffer_stream.arg1.name);
 
     //gerar key com dimensão e letras diferentes conforme nivel de dificuldade
     if (buffer_stream.arg2.n == DIFF_1)
@@ -473,7 +473,7 @@ void* thread_func_acceptgames()
 
         if (buffer_stream.command == CNJ)
         {
-            printf("[INFO] SERVER_STREAM: O jogador %s:%d deseja começar um novo jogo.\n", buffer_stream.arg1.Name, new_sock);
+            printf("[INFO] SERVER_STREAM: O jogador %s:%d deseja começar um novo jogo.\n", buffer_stream.arg1.name, new_sock);
 
             //criação de novas threads de jogo
             for (int i = 0; i < NJMAX; i++)

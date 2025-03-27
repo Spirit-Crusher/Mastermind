@@ -17,13 +17,14 @@
 #include <sys/syscall.h>
 #include <mqueue.h>
 #include <signal.h> 
+#include <ctype.h>
 
 /****************** Defines *******************/
 #define NJMAX 4                    /* número máximo de jogadores em simultâneo */
 #define MAXNJ 10                  /* valor inicial do número máximo de jogadas (tentativas) */
 #define MAXT 5                     /* valor inicial do tempo máximo de jogo (minutos) */
 #define TOPN 10                    /* número de jogos a apresentar na tabela de classificação */
-#define JMMLOG "JOGOS.LOG"         /* ficheiro com registo histórico */
+#define JMMLOG "../JOGOS.LOG"         /* ficheiro com registo histórico */
 #define JMMSERVSD "/tmp/JMMSERVSD" /* nome do servidor de jogo (socket datagram) */
 #define JMMSERVSS "/tmp/JMMSERVSS" /* nome do servidor de jogo (socket stream) */
 #define JMMLOGSD "/tmp/JMMLOGS"    /* nome do registo histórico (socket datagram) */
@@ -32,7 +33,6 @@
 #define NO_TIME_REGISTERED -1
 #define GAME_ACCEPTED "YOUR GAME WILL START SOON"
 #define MOVE_REGISTERED "YOUR MOVE HAS BEEN REGISTERED"
-#define MSG "SERVER IS ALIVE AND WELL"
 #define GAME_DENIED "SERVER IS FULL. YOUR GAME HAS BEEN DENIED"
 #define GAME_LOST_TIME "GAME OVER. TIME RAN OUT"
 #define GAME_LOST_TRIES "GAME OVER. TOO MANY TRIES"
@@ -78,6 +78,7 @@ typedef struct
   int nt;     /* número de tentativas usadas */
   time_t ti;  /* estampilha temporal início do jogo */
   time_t tf;  /* estampilha temporal fim do jogo */
+  
 } rjg_t;
 
 typedef struct
@@ -104,6 +105,7 @@ typedef struct // variável de estado do jogo
   int sd; //socket descriptor associado a este jogador
   struct sockaddr_un player_addr; //address do cliente
   socklen_t addr_len; //comprimento do address
+
 } game_t;
 
 typedef struct
@@ -112,7 +114,7 @@ typedef struct
 
   union
   {
-    char Name[4];
+    char name[4];
     char move[6];
     unsigned int j;
     unsigned short int n;
@@ -132,13 +134,13 @@ typedef struct
   int game_number;
   int sock_stream;
   coms_t buffer_s;
+
 } new_game_info;
 
-typedef struct {
+typedef struct 
+{
   rjg_t tb[10];
   int tb_n_games;
   int tb_diff;
-} log_single_tab_t;
 
-/***************************  Fuctions ***************************/
-void generate_key(char* key, game_diff_t level);
+} log_single_tab_t;
