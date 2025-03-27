@@ -36,4 +36,4 @@ JMMserv: servidor_build/servidor.o servidor_build/core_gameplay.o ../mastermind.
 #	$(CC) $(CFLAGS) $< -o $@.exe
 
 clean:
-	rm -rf servidor_build/*.o *.exe
+	rm -rf servidor_build/*.o JMMserv.exe

@@ -7,7 +7,7 @@ CC = gcc
 DEBUG_FLAGS = -g -O0
 
 # Compilation flags
-CFLAGS = -Wall -Wextra -std=c11 -D_XOPEN_SOURCE=500 -Iservidor -lrt -lpthread
+CFLAGS = -Wall -Wextra -std=c11 -D_XOPEN_SOURCE=500 -lrt -lpthread
 ## -D_XOPEN_SOURCE=500 devido a um erro do "implicit declaration of function ‘ftruncate’ "
 ## NÃO ESQUECER as FLAGS -lrt -lpthread ---------------------------------------------------------------------------------
 
@@ -33,3 +33,6 @@ log_server_build/log_server.o: log_server.c log_server.h ../mastermind.h
 
 test: log_server_test.c log_server.h
 	$(CC) $(CFLAGS) $< -o $@.exe
+
+clean:
+	rm -rf log_server_build/*.o JMMlog.exe
