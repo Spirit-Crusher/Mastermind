@@ -8,7 +8,7 @@ struct sockaddr_un client_addr; //endereço do cliente
 socklen_t client_addrlen; //não será igual ao server_addrlen? (acho que posso eliminar esta variável e passar o server_addrlen para addrlen)
 rules_t global_game_rules = { .maxj = MAXNJ, .maxt = MAXT * 60 }; //criação e iniciaização das regras do jogo
 bool ledger_on = true; //usado para verificar se registo de jogos está ou não ativo
-char log_server[] = "../log_server/JMMlog"; //caminho relativo para log_server
+char log_server[] = "pwd & ../log_server/JMMlog &"; //caminho relativo para log_server
 int sd_datagram; //socket descriptor do servidor para datagrama
 int sd_stream; //socket descriptor do servidor para stream
 

@@ -1,27 +1,41 @@
 
-# Default TARGET
-all: servidor/JMMserv log_server/JMMlog log_server/JMMapl
+# Default all
+all: serv log apl
 
-servidor/JMMserv: 
+################################## BUILD ##################################
+# Build server
+serv: 
 #	$(CC) $^ -o $@
 	cd ./servidor && make
 
-log_server/JMMlog: 
+# Build log
+log: 
 #	$(CC) $^ -o $@
 	cd ./log_server && make
 
-log_server/JMMapl: 
+# Build client
+apl: 
 #	$(CC) $^ -o $@
 	cd ./client && make
 
-
-
+################################## RUN ##################################
 # run server
-run_s: ./servidor/JMMserv
-	./servidor/JMMserv
+run_s:
 
+	cd ./servidor && make && ./JMMserv
+
+# run log server
+run_l:
+	cd ./log_server && make && ./JMMlog
+
+# run client
+run_c:
+	cd ./client && make && ./JMMapl
+
+################################## CLEAN ##################################
 # Clean build files
 clean:
 	cd ./servidor && make clean
 	cd ./log_server && make clean
+	cd ./client && make clean
 

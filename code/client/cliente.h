@@ -41,3 +41,6 @@ void cmd_tmm  (int, char**);
 void cmd_ltc  (int, char**);
 void cmd_rtc  (int, char**);
 void cmd_trh  (int, char**);
+
+void print_rjg(const rjg_t* game);
+void print_log_tabs(log_single_tab_t * log_tab);
