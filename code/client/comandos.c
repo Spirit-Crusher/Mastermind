@@ -1,59 +1,9 @@
 #include "cliente.h"
 
-extern DATAGRAM datsock;
-STREAM strmsock;
-
 /*---------------------------variávies_globais----------------------------*/
 unsigned short int dif;
-
-// chaves para os comandos existentes
-typedef enum {
-  CNJ, JG, CLM,
-  MLM, CER, AER,
-  DER, TMM, LTC,
-  RTC, TRH
-} commands_t;
-
-// conjunto de combinações possíveis dos comandos
-typedef struct {
-  commands_t command;
-  
-  union {
-    char name[4];
-    char move[6];
-    unsigned int j;
-    unsigned short int n;
-  } arg1;
-
-  union {
-    unsigned short int n;
-    time_t t;
-  } arg2;
-  
-} coms_t;
-
-
-typedef enum{
-    DIFF_ALL,
-    DIFF_1,
-    DIFF_2,
-} game_diff_t;
-
-
-typedef struct {            /* estrutura de um registo de jogo */
-    int nd;                 /* nível de dificuldade do jogo */
-    char nj[4];             /* nome do jogador (3 carateres) */
-    int nt;                 /* número de tentativas usadas */
-    time_t ti;              /* estampilha temporal início do jogo */
-    time_t tf;              /* estampilha temporal fim do jogo */
-} rjg_t;
-
-
-typedef struct {
-  rjg_t tb[10];
-  int tb_n_games;
-  int tb_diff;
-} log_single_tab_t;
+STREAM strmsock;
+extern DATAGRAM datsock;
 /*------------------------------------------------------------------------*/
 
 
@@ -98,8 +48,15 @@ void cmd_cnj(int argc, char** argv){
         close(strmsock.sd_stream);
         return;     // volta para a "linha de comandos"
       }else{
-        while(read(strmsock.sd_stream, buf_s, sizeof(buf_s)) < 0);
-        printf("[INFO] Cliente recebeu confirmação: %s\n", buf_s);      
+        if(!(read(strmsock.sd_stream, buf_s, sizeof(buf_s)) < 0)){                // colocar aqui timeout algures
+          if(strcmp(buf_s, GAME_DENIED) == 0){   
+            printf("%s", GAME_DENIED);
+            close(strmsock.sd_stream);                                            // fechar socket stream
+            printf("[INFO] Pedido de jogo recusado. Tentar novamente mais tarde. \n");  
+          }else{
+            printf("[INFO] Cliente recebeu confirmação: %s\n", buf_s);
+          }
+        }
       }
     }else{
       printf("[ERRO] Nível de dificuldade inválido! Inserir dificuldade: 1 ou 2.\n");
@@ -116,8 +73,8 @@ void cmd_cnj(int argc, char** argv){
 void cmd_jg(int argc, char** argv){
   unsigned short int aux;
   char xua;
-  char val1_play[DIMPLAY1];
-  char val2_play[DIMPLAY2];
+  char val_play[DSENDPLAY];
+  char rcv_play[DRCVPLAY];
   coms_t cmd_msg;
 
   if(strmsock.sd_stream > 0){
@@ -127,36 +84,40 @@ void cmd_jg(int argc, char** argv){
         return;
       }
 
-      strcpy(val1_play, argv[1]);
-      for(aux = 0; aux < strlen(val1_play); aux++){
-        xua = val1_play[aux];
+      strcpy(val_play, argv[1]);
+      for(aux = 0; aux < strlen(val_play); aux++){
+        xua = val_play[aux];
+
         if(!((xua == 'A') || (xua == 'B') || (xua == 'C') || (xua == 'D') || (xua == 'E'))){
-          // printf("OLA!!!");
           printf("[ERRO] Jogada inválida! Introduzir 3 letras (de {ABCDE})");
           return;
         }
       }
 
-      cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);         // atribui dados a enviar, na estrutura de dados
+      cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);               // atribui dados a enviar, na estrutura de dados
 
       if((write(strmsock.sd_stream, &cmd_msg, sizeof(cmd_msg)) < 0)){
         perror("[ERRO] Envio para o servidor. Tentar novamente. \a\n");
         return;
       }else{
-        while(read(strmsock.sd_stream, val1_play, sizeof(val1_play)) < 0);       // espera até receber
-        printf("[INFO] Jogada: %s\n", val1_play);                       // jogada
-      }
-    }
+        while(read(strmsock.sd_stream, rcv_play, sizeof(rcv_play)) < 0);      // adicionar timeout aqui algures
 
-    if(dif == 2){
+        if(strcmp(rcv_play, GAME_WON) != 0){
+          printf("[INFO] Jogada: %s", rcv_play);                              // jogada
+        }else{
+          printf("[INFO] Parabéns: %s \n", GAME_WON);                         // jogador vence
+          close(strmsock.sd_stream);                                          // fecha o seu socket                    
+        }
+      }
+    }else if(dif == 2){
       if(strlen(argv[1]) != 5){
         printf("[ERRO] Jogada inválida! Introduzir 5 letras (de {ABCDEFGH})");
         return;
       }
 
-      strcpy(val2_play, argv[1]);
-      for(aux = 0; aux < strlen(val2_play); aux++){
-        xua = val2_play[aux];
+      strcpy(val_play, argv[1]);
+      for(aux = 0; aux < strlen(val_play); aux++){
+        xua = val_play[aux];
         if(!((xua == 'A') || (xua == 'B') || (xua == 'C') || (xua == 'D') || (xua == 'E') || (xua == 'F') || (xua == 'G') || (xua == 'H'))){
           printf("[ERRO] Jogada inválida! Introduzir 5 letras (de {ABCDEFGH})");
           return;
@@ -169,13 +130,19 @@ void cmd_jg(int argc, char** argv){
         perror("[ERRO] Envio para o servidor. Tentar novamente. \a\n");
         return;
       }else{
-        while(read(strmsock.sd_stream, val2_play, sizeof(val2_play)) < 0);
-        printf("[INFO] Jogada: %s\n", val2_play);      
+        while(read(strmsock.sd_stream, rcv_play, sizeof(rcv_play)) < 0);      // adicionar timeout aqui algures
+        if(strcmp(rcv_play, GAME_WON) != 0){                                  // verifica se o jogador venceu ou não
+          printf("[INFO] Jogada: %s", rcv_play);                              // jogada
+        }else{
+          printf("[INFO] Parabéns: %s \n", rcv_play);                         // jogador vence
+          close(strmsock.sd_stream);                                          // fecha o seu socket
+          printf("[INFO] Jogador desconectado do seu socket stream. 'cnj' para criar novo jogo. \n");       
+        }
       }
+    }else{
+      printf("[ERRO] Jogo não inicializado. Tentar novamente. \a\n");
+      return;
     }
-  }else{
-    printf("[ERRO] Jogo não inicializado. Tentar novamente. \a\n");
-    return;
   }
 }
 /*-------------------------------------------------------------------------*/
