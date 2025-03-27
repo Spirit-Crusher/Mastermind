@@ -1,26 +1,5 @@
 #include "cliente.h"
 
-
-/*-------------------------------------------------------------------------+
-| Headers of command functions
-+--------------------------------------------------------------------------*/ 
-/*
-       void cmd_sos  (int, char**);
-extern void cmd_sair (int, char**);
-extern void cmd_test (int, char**);
-extern void cmd_cnj  (int, char**);
-extern void cmd_jg   (int, char**);
-extern void cmd_clm  (int, char**);
-extern void cmd_mlm  (int, char**);
-extern void cmd_cer  (int, char**);
-extern void cmd_aer  (int, char**);
-extern void cmd_der  (int, char**);
-extern void cmd_tmm  (int, char**);
-extern void cmd_ltc  (int, char**);
-extern void cmd_rtc  (int, char**);
-extern void cmd_trh  (int, char**);
-*/
-
 /*-------------------------------------------------------------------------+
 | Variable and constants definition
 +--------------------------------------------------------------------------*/ 
@@ -34,7 +13,8 @@ struct 	command_d {
 } 
 
 const commands[] = {
-  {cmd_sos,  "sos","                   help"},
+  {cmd_sos,  "sos","                       "},
+  {cmd_sos,  "help","                      "},
   {cmd_sair, "sair","                  sair da aplicação de jogo"},
   {cmd_test, "teste","<arg1> <arg2>    comando de teste"},
   {cmd_cnj, "cnj", "<N> <n>            começar novo jogo (Nome (N) (3 chars) e nível de dificuldade (n)(1/2))"},

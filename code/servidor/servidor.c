@@ -497,7 +497,7 @@ void* thread_func_acceptgames()
                     }
                     break; //já criámos thread, podemos prosseguir
                 }
-                else if (game_instances[i] == NULL && i == NJMAX - 1)
+                else if (game_instances[i] != NULL && i == NJMAX - 1)
                 {
                     //informar que servidor está cheio
                     if (write(new_sock, GAME_DENIED, strlen(GAME_DENIED) + 1) < 0)
