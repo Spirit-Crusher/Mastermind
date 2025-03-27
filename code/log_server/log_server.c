@@ -274,7 +274,7 @@ void insert_sorted_n(log_tabs_t* log, rjg_t new_game, game_diff_t diff) {
   // Insere o novo jogo na posição correta
   table[i] = new_game;
   (*n_games)++;
-  msync(log, MSIZE, MS_SYNC);
+  //msync(log, MSIZE, MS_SYNC);
   printf("[INFO] Ficheiro sincronizado\n");
 }
 
@@ -326,6 +326,6 @@ void del_tab_n(int diff) {
     printf("del_tab_n: difficuldade inválida\n");
     break;
   }
-  msync(tabel_pt, MSIZE, MS_SYNC);
+  //msync(tabel_pt, MSIZE, MS_SYNC);
   printf("[INFO] Ficheiro sincronizado\n");
 }
