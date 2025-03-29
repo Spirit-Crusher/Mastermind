@@ -1,6 +1,5 @@
 #include "servidor.h"
 
-coms_t buffer_dgram; //posso usar só 1 buffer com mutex I think mas acho que ia tornar tudo mais lento sem necessidade e o prof não especifica
 pthread_t thread_acceptgames; //thread que aceita novos jogos
 pthread_t thread_gameinstance[NJMAX]; //threads responsáveis por gerir os vários jogos //!acho que isto pode ser local ao acceptgames
 game_t* game_instances[NJMAX] = { 0 }; //apontadores para jogos são guardados para poderem ser alterados
@@ -11,6 +10,7 @@ bool ledger_on = true; //usado para verificar se registo de jogos está ou não 
 char log_server[] = "pwd & ../log_server/JMMlog &"; //caminho relativo para log_server
 int sd_datagram; //socket descriptor do servidor para datagrama
 int sd_stream; //socket descriptor do servidor para stream
+pthread_mutex_t rules_mutex; //mutex para impedir que regras sejam alteradas enquanto está a ser criado novo jogo
 
 
 /*####################################################### exit_handler ######################################################*/
@@ -25,11 +25,12 @@ void exit_handler()
     unlink(JMMSERVSD);
     unlink(JMMSERVSS);
 
+    //libertar memória de todos os jogos alocados dinamicamente
     for (int i = 0; i < NJMAX; ++i)
     {
         if (game_instances[i] != NULL)
         {
-            close(game_instances[i]->sd);  //!ALGUM DESTES DÁ SEGFAULT
+            close(game_instances[i]->sd);
             free(game_instances[i]);
             game_instances[i] = NULL;
         }
@@ -92,16 +93,13 @@ void analise_move(game_t* game_pt)
     game_pt->nb = nb;
     game_pt->np = np;
     
-    //DEBUG 
-    printf("[INFO] Time = %ld. Inicial = %ld. Máx = %d\n", time(NULL), game_pt->log.ti, game_pt->game_rules.maxt);
-    printf("[INFO] Diff time: %lf\n",difftime(time(NULL), game_pt->log.ti));
-
     // verificar se o jogo acabou
     if (np == game_pt->n_char)
     {
         // jogador ganhou
         game_pt->log.tf = time(NULL);
         game_pt->game_state = PLAYER_WIN;
+        printf("[INFO] O jogador ganhou\n");
     }
     else if (game_pt->game_rules.maxj <= game_pt->log.nt)
     {
@@ -134,11 +132,10 @@ void create_new_game(game_t* game, int socket, coms_t buffer_stream)
     game->sd = socket;
 
     //inicializar regras do jogo
+    pthread_mutex_lock(&rules_mutex);
     game->game_rules.maxj = global_game_rules.maxj;
     game->game_rules.maxt = global_game_rules.maxt;
-
-    printf("\ndif: %d\n\n", buffer_stream.arg2.n);
-    printf("\nname: %s\n\n", buffer_stream.arg1.name);
+    pthread_mutex_unlock(&rules_mutex);
 
     //gerar key com dimensão e letras diferentes conforme nivel de dificuldade
     if (buffer_stream.arg2.n == DIFF_1)
@@ -160,7 +157,7 @@ void create_new_game(game_t* game, int socket, coms_t buffer_stream)
     else
     {
         printf("[ERRO] Problemas a gerar a key\n");
-        exit(-1);
+        exit_handler();
     }
 
     printf("[INFO] Init do jogo funcionou\n");
@@ -186,7 +183,7 @@ void stream_handler(int socket, game_t* game, coms_t buffer_stream)
     else
     {
         printf("[ERRO] Ops... Isto não era suposto acontecer.\n");
-        exit(-1);
+        exit_handler();
     }
 
     return;
@@ -195,7 +192,7 @@ void stream_handler(int socket, game_t* game, coms_t buffer_stream)
 
 /*####################################################### datagram_handler ######################################################*/
 
-void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_addrlen)
+void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_addrlen, coms_t buffer_dgram)
 {
     char buffer_send[100]; //buffer para mensagem de resposta
 
@@ -203,24 +200,26 @@ void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_a
     {
         case CLM:
             //enviar regras globais atuais
-            sprintf(buffer_send, "%d:%d", global_game_rules.maxj, global_game_rules.maxt);
+            sprintf(buffer_send, "Jogadas máximas:%d    Tempo máximo:%d\n", global_game_rules.maxj, global_game_rules.maxt);
             if (sendto(sd, buffer_send, strlen(buffer_send)+1, 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
             {
-                perror("[ERRO] Erro no envio de datagrama");
+                perror("[ERRO] Erro no envio de datagrama\n\a");
             }
             break;        
             
         case MLM:
             //alterar as regras
+            pthread_mutex_lock(&rules_mutex);
             global_game_rules.maxj = buffer_dgram.arg1.j;
             global_game_rules.maxt = buffer_dgram.arg2.t;
+            pthread_mutex_unlock(&rules_mutex);
 
             printf("[AVISO] Regras globais alteradas: jmax=%d tmax=%d\n", global_game_rules.maxj, global_game_rules.maxt);
 
-            sprintf(buffer_send, "Game rules changed.\n");
+            sprintf(buffer_send, "[INFO] Regras alteradas com sucesso.\n");
             if (sendto(sd, buffer_send, strlen(buffer_send)+1, 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
             {
-                perror("[ERRO] Erro no envio de datagrama");
+                perror("[ERRO] Erro no envio de datagrama\n\a");
             }
             break;
 
@@ -234,7 +233,7 @@ void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_a
 
             if (sendto(sd, buffer_send, strlen(buffer_send)+1, 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
             {
-                perror("[ERRO] Erro no envio de datagrama");
+                perror("[ERRO] Erro no envio de datagrama\n\a");
             }    
             break;
 
@@ -244,7 +243,7 @@ void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_a
             sprintf(buffer_send, "[INFO] Registo ativado com sucesso\n");
             if (sendto(sd, buffer_send, strlen(buffer_send)+1, 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
             {
-                perror("[ERRO] Erro no envio de datagrama");
+                perror("[ERRO] Erro no envio de datagrama\n\a");
             }    
             break;
 
@@ -254,7 +253,7 @@ void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_a
             sprintf(buffer_send, "[INFO] Registo desativado com sucesso\n");
             if (sendto(sd, buffer_send, strlen(buffer_send)+1, 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
             {
-                perror("[ERRO] Erro no envio de datagrama");
+                perror("[ERRO] Erro no envio de datagrama\n\a");
             }
             break;
 
@@ -264,6 +263,7 @@ void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_a
             break;
 
         default:
+            printf("[ERRO] Comando datagrama desconhecido.\n");
             break;
     }
 }
@@ -277,8 +277,8 @@ void save_game(rjg_t log)
 
     if ((mqids = mq_open(JMMLOGQ, O_RDWR)) < 0) 
     {
+        perror("[ERRO] Erro a associar a queue servidor\n\a");
         printf("[INFO] Vou fazer o system\n");
-        perror("[ERRO] Erro a associar a queue servidor\n");
         system(log_server); //se falhou começar log_server
         sleep(1);
         printf("[INFO] Servidor iniciou log_server\n");
@@ -286,6 +286,7 @@ void save_game(rjg_t log)
         if ((mqids = mq_open(JMMLOGQ, O_RDWR)) < 0)
         {
             perror("[ERRO] Servidor não conseguiu abrir queue do log\n\a");
+            return;
         }
 
     }
@@ -293,7 +294,7 @@ void save_game(rjg_t log)
     printf("[INFO] A enviar jogo ao log_server, MQIDS:%d\n", mqids);
     if (mq_send(mqids, (char*)&log, sizeof(log), 0) < 0) 
     {
-        perror("[ERRO] Erro a enviar mensagem\n");
+        perror("[ERRO] Erro a enviar mensagem\n\a");
     }
 }
 
@@ -306,8 +307,7 @@ void* thread_func_gameinstance(void* game_info)
     coms_t buffer_stream = info.buffer_s;
     int game_number = info.game_number;
     int socket = info.sd;
-    //int stream = info.sock_stream;
-    char result[100]; //!melhorar isto
+    char result[100];
 
     printf("[INFO] Esta é a socket e o game number do novo jogador: %d:%d\n", socket, game_number);
 
@@ -316,8 +316,8 @@ void* thread_func_gameinstance(void* game_info)
     current_game = malloc(sizeof(game_t));
     if (current_game == NULL)
     {
-        perror("[ERRO] Falha a alocar estrutura do jogo");
-        exit(-1);
+        perror("[ERRO] Falha a alocar estrutura do jogo\n\a");
+        exit_handler();
     }
 
     //guardar novo jogo no vetor de jogos
@@ -332,11 +332,8 @@ void* thread_func_gameinstance(void* game_info)
         //ler jogadas do jogador e processar as mesmas enquanto o jogo estiver a decorrer
         if (read(socket, &buffer_stream, sizeof(buffer_stream)) <= 0)
         {
-            perror("[AVISO] Cliente desconectou-se");
-            close(socket);
-            free(current_game);
-            game_instances[game_number] = NULL;
-            return NULL;
+            perror("[AVISO] Cliente desconectou-se\n\a");
+            break;
         }
 
         printf("STATE1 = %d\n", current_game->game_state);
@@ -351,7 +348,7 @@ void* thread_func_gameinstance(void* game_info)
                 printf("Resultado da jogada: %s\n", result);
                 if (write(socket, result, strlen(result) + 1) < 0)
                 {
-                    perror("[ERRO] Erro no envio de stream");
+                    perror("[ERRO] Erro no envio de stream\n\a");
                 }
                 break;
 
@@ -360,7 +357,7 @@ void* thread_func_gameinstance(void* game_info)
                 printf("[INFO] O jogador perdeu(tempo)\n");
                 if (write(socket, GAME_LOST_TIME, strlen(GAME_LOST_TIME) + 1) < 0)
                 {
-                    perror("[ERRO] Erro no envio de stream");
+                    perror("[ERRO] Erro no envio de stream\n\a");
                 }
                 break;
 
@@ -369,7 +366,7 @@ void* thread_func_gameinstance(void* game_info)
                 printf("[INFO] O jogador perdeu(tentativas)\n");
                 if (write(socket, GAME_LOST_TRIES, strlen(GAME_LOST_TRIES) + 1) < 0)
                 {
-                    perror("[ERRO] Erro no envio de stream");
+                    perror("[ERRO] Erro no envio de stream\n\a");
                 }
                 break;
 
@@ -377,7 +374,7 @@ void* thread_func_gameinstance(void* game_info)
                 //informar jogador da vitória
                 if (write(socket, GAME_WON, strlen(GAME_WON) + 1) < 0)
                 {
-                    perror("[ERRO] Erro no envio de stream");
+                    perror("[ERRO] Erro no envio de stream\n\a");
                 }
                 
                 printf("[INFO] O jogador ganhou\n");
@@ -392,7 +389,7 @@ void* thread_func_gameinstance(void* game_info)
             default:
                 if (write(socket, GAME_CRASHED, strlen(GAME_CRASHED) + 1) < 0)
                 {
-                    perror("[ERRO] Erro no envio de stream");
+                    perror("[ERRO] Erro no envio de stream\n\a");
                 }
                 break;
         }
@@ -422,8 +419,8 @@ void* thread_func_acceptgames()
     //criação da socket stream
     if ((sd_stream = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
     {
-        perror("[ERRO] Não foi possível criar socket stream");
-        exit(-1);
+        perror("[ERRO] Não foi possível criar socket stream\n\a");
+        exit_handler();
     }
 
     //inicializar socket STREAM
@@ -438,16 +435,16 @@ void* thread_func_acceptgames()
     //ligar server à socket (bind)
     if (bind(sd_stream, (struct sockaddr*)&streamsv_addr, streamsv_addrlen) < 0)
     {
-        perror("[ERRO] Não consegui dar bind da socket stream");
-        exit(-1);
+        perror("[ERRO] Não consegui dar bind da socket stream\n\a");
+        exit_handler();
     }
 
 
     //socket stream vai ficar a ouvir requests para conectar e aceitará apenas um máximo de NJMAX clientes
     if (listen(sd_stream, NJMAX) < 0)
     {
-        perror("[ERRO] Listen deu erro");
-        exit(-1);
+        perror("[ERRO] Listen deu erro\n\a");
+        exit_handler();
     }
 
     printf("[INFO] À espera de receber conexões dos clientes...\n");
@@ -458,8 +455,8 @@ void* thread_func_acceptgames()
         client_addrlen = sizeof(client_addr);
         if ((new_sock = accept(sd_stream, (struct sockaddr*)&client_addr, &client_addrlen)) < 0)
         {
-            perror("[ERRO] Accept deu erro");
-            exit(-1);
+            perror("[ERRO] Accept deu erro\n\a");
+            exit_handler();
         }
 
         printf("[AVISO] Novo cliente conectado.\n");
@@ -467,8 +464,8 @@ void* thread_func_acceptgames()
         //ler mensagem (em princípio será um cnj tendo em conta que são novos jogadores)
         if (read(new_sock, &buffer_stream, sizeof(buffer_stream)) <= 0)
         {
-            perror("[ERRO] Erro a ler stream");
-            exit(-1);
+            perror("[ERRO] Erro a ler stream\n\a");
+            exit_handler();
         }
 
         if (buffer_stream.command == CNJ)
@@ -492,7 +489,7 @@ void* thread_func_acceptgames()
                         //enviar mensagem ao jogador para lhe confirmar que request foi aceite
                         if (write(new_sock, GAME_ACCEPTED, strlen(GAME_ACCEPTED) + 1) < 0)
                         {
-                            perror("[ERRO] Erro no envio de stream");
+                            perror("[ERRO] Erro no envio de stream\n\a");
                         }
                     }
                     break; //já criámos thread, podemos prosseguir
@@ -500,9 +497,10 @@ void* thread_func_acceptgames()
                 else if (game_instances[i] != NULL && i == NJMAX - 1)
                 {
                     //informar que servidor está cheio
+                    printf("[AVISO] Servidor cheio, a recusar pedido...\n");
                     if (write(new_sock, GAME_DENIED, strlen(GAME_DENIED) + 1) < 0)
                     {
-                        perror("[ERRO] Erro no envio de stream");
+                        perror("[ERRO] Erro no envio de stream\n\a");
                     }
                     close(new_sock);
                 }
@@ -521,28 +519,36 @@ void* thread_func_acceptgames()
 
 int main()
 {
+    coms_t buffer_dgram;
     struct sockaddr_un dgramsv_addr;
     socklen_t dgramsv_addrlen;
 
-    //set signal
+    //definir exit_handler signal
     signal(SIGTERM, exit_handler); 
     signal(SIGINT, exit_handler); 
 
-    //set seed
+    //definir seed
     srand(time(NULL));
+
+    //iniciar mutex
+    if (pthread_mutex_init(&rules_mutex, NULL) != 0)
+    {
+        printf("[ERRO] Erro a inicializar mutex\n");
+    }
+    
 
     //iniciar thread aceita jogos
     if (pthread_create(&thread_acceptgames, NULL, thread_func_acceptgames, NULL) != 0)
     {
-        perror("[ERRO] Criação da thread acceptgames falhou\n");
+        perror("[ERRO] Criação da thread acceptgames falhou\n\a");
     }
     else printf("[INFO] ACCEPTGAMES criado\n");
 
     //criação da socket datagrama
     if ((sd_datagram = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0)
     {
-        perror("[ERRO] Não foi possível criar socket datagrama");
-        exit(-1);
+        perror("[ERRO] Não foi possível criar socket datagrama\n\a");
+        exit_handler();
     }
 
     //inicializar socket datagrama
@@ -557,8 +563,8 @@ int main()
     //ligar server à socket (bind)
     if (bind(sd_datagram, (struct sockaddr*)&dgramsv_addr, dgramsv_addrlen) < 0)
     {
-        perror("[ERRO] Não consegui dar bind da socket datagrama");
-        exit(-1);
+        perror("[ERRO] Não consegui dar bind da socket datagrama\n\a");
+        exit_handler();
     }
 
     //ler datagramas
@@ -567,11 +573,11 @@ int main()
         client_addrlen = sizeof(client_addr);
         if (recvfrom(sd_datagram, &buffer_dgram, sizeof(buffer_dgram), 0, (struct sockaddr*)&client_addr, &client_addrlen) < 0)
         {
-            perror("[ERRO] Erro na recepção de datagrama");
+            perror("[ERRO] Erro na recepção de datagrama\n\a");
         }
         else
         {
-            datagram_handler(sd_datagram, client_addr, client_addrlen); //processar request
+            datagram_handler(sd_datagram, client_addr, client_addrlen, buffer_dgram); //processar request
         }
     }
 
