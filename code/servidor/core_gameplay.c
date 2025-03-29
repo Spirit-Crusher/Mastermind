@@ -1,8 +1,5 @@
 #include "core_gameplay.h"
 
-// por este linha na main::
-//! -> srand(time(NULL));
-
 // Função que gera a chave secreta aleatoriamente, conforme nível
 void generate_key(char *key, game_diff_t level) 
 {
