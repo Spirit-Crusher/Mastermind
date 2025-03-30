@@ -1,7 +1,7 @@
 #include "cliente.h"
 
-void monitor(DATAGRAM);
-DATAGRAM create_sock(void);
+extern void monitor();
+extern DATAGRAM create_sock(void);
 extern void cmd_sair (int, char**);
 
 DATAGRAM datsock;

@@ -10,23 +10,23 @@ extern DATAGRAM datsock;
 /*-------------------------------------------------------------------------+
 | Function: cmd_cnj - criar novo jogo
 +--------------------------------------------------------------------------*/
-void cmd_cnj(int argc, char** argv) {
+void cmd_cnj(int argc, char** argv){
   char buf_s[50];
   coms_t coms_msg;                                                            // struct para realizar o envio dos comandos para o servidor
 
-  if (argc != 3) {                                                              // comando + nome + dificuldade
+  if(argc != 3){                                                              // comando + nome + dificuldade
     printf("[ERRO] Número de argumentos inválido. Tentar novamente.\n");
     return;                                                                   // volta para a "linha de comandos"
   }
 
-  if (strlen(argv[1]) != 3) {                                                   // nome com 3 chars
+  if(strlen(argv[1]) != 3){                                                   // nome com 3 chars
     printf("[ERRO] Nome inválido! Introduzir no máximo 3 caracteres.\n");
     return;                                                                   // volta para a "linha de comandos"
   }
-  else {
+  else{
     dif = atoi(argv[2]);
-    if ((dif == 1) || (dif == 2)) {
-      if ((strmsock.sd_stream = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {        // tenta criar socket stream
+    if((dif == 1) || (dif == 2)){
+      if((strmsock.sd_stream = socket(AF_UNIX, SOCK_STREAM, 0)) < 0){         // tenta criar socket stream
         perror("[ERRO] Criação de socket stream. Tentar novamente. \a\n");
         return;                                                               // volta para a "linha de comandos"
       }
@@ -36,7 +36,7 @@ void cmd_cnj(int argc, char** argv) {
       strcpy(strmsock.srv_addr_s.sun_path, JMMSERVSS);
       strmsock.addrlen_s = sizeof(strmsock.srv_addr_s.sun_family) + strlen(strmsock.srv_addr_s.sun_path);
 
-      if (connect(strmsock.sd_stream, (struct sockaddr*)&strmsock.srv_addr_s, strmsock.addrlen_s) < 0) {
+      if(connect(strmsock.sd_stream, (struct sockaddr*)&strmsock.srv_addr_s, strmsock.addrlen_s) < 0){
         perror("[ERRO] Connect. Tentar novamente. \a\n");
         return;     // volta para a "linha de comandos"
       }
@@ -44,25 +44,25 @@ void cmd_cnj(int argc, char** argv) {
       coms_msg.command = CNJ; coms_msg.arg2.n = atoi(argv[2]);
       strcpy(coms_msg.arg1.name, argv[1]);
 
-      if ((write(strmsock.sd_stream, &coms_msg, sizeof(coms_msg)) < 0)) {
+      if((write(strmsock.sd_stream, &coms_msg, sizeof(coms_msg)) < 0)){
         perror("[ERRO] Write para o servidor. Tentar novamente. \a\n");
         close(strmsock.sd_stream);
         return;     // volta para a "linha de comandos"
       }
-      else {
-        if (!(read(strmsock.sd_stream, buf_s, sizeof(buf_s)) < 0)) {                // colocar aqui timeout algures
-          if (strcmp(buf_s, GAME_DENIED) == 0) {
+      else{
+        if(!(read(strmsock.sd_stream, buf_s, sizeof(buf_s)) < 0)){            // colocar aqui timeout algures
+          if(strcmp(buf_s, GAME_DENIED) == 0){
             printf("%s", GAME_DENIED);
-            close(strmsock.sd_stream);                                            // fechar socket stream
+            close(strmsock.sd_stream);                                        // fechar socket stream
             printf("[INFO] Pedido de jogo recusado. Tentar novamente mais tarde. \n");
           }
-          else {
+          else{
             printf("[INFO] Cliente recebeu confirmação: %s\n", buf_s);
           }
         }
       }
     }
-    else {
+    else{
       printf("[ERRO] Nível de dificuldade inválido! Inserir dificuldade: 1 ou 2.\n");
       return;
     }
@@ -74,25 +74,25 @@ void cmd_cnj(int argc, char** argv) {
 /*-------------------------------------------------------------------------+
 | Function: cmd_jg - fazer jogada
 +--------------------------------------------------------------------------*/
-void cmd_jg(int argc, char** argv) {
+void cmd_jg(int argc, char** argv){
   unsigned short int aux;
   char xua;
   char val_play[DSENDPLAY];
   char rcv_play[DRCVPLAY];
   coms_t cmd_msg;
 
-  if (strmsock.sd_stream > 0) {
-    if (dif == 1) {
-      if (strlen(argv[1]) != 3) {
+  if((strmsock.sd_stream > 0) && (argc == 2)){
+    if(dif == 1){
+      if(strlen(argv[1]) != 3){
         printf("[ERRO] Repetir jogada! Introduzir 3 letras (de {ABCDE})");
         return;
       }
 
       strcpy(val_play, argv[1]);
-      for (aux = 0; aux < strlen(val_play); aux++) {
+      for(aux = 0; aux < strlen(val_play); aux++){
         xua = val_play[aux];
 
-        if (!((xua == 'A') || (xua == 'B') || (xua == 'C') || (xua == 'D') || (xua == 'E'))) {
+        if(!((xua == 'A') || (xua == 'B') || (xua == 'C') || (xua == 'D') || (xua == 'E'))){
           printf("[ERRO] Jogada inválida! Introduzir 3 letras (de {ABCDE})");
           return;
         }
@@ -100,32 +100,29 @@ void cmd_jg(int argc, char** argv) {
 
       cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);               // atribui dados a enviar, na estrutura de dados
 
-      if ((write(strmsock.sd_stream, &cmd_msg, sizeof(cmd_msg)) < 0)) {
+      if((write(strmsock.sd_stream, &cmd_msg, sizeof(cmd_msg)) < 0)){
         perror("[ERRO] Envio para o servidor. Tentar novamente. \a\n");
         return;
-      }
-      else {
-        while (read(strmsock.sd_stream, rcv_play, sizeof(rcv_play)) < 0);      // adicionar timeout aqui algures
+      }else{
+        while(read(strmsock.sd_stream, rcv_play, sizeof(rcv_play)) < 0);      // adicionar timeout aqui algures
 
-        if (strcmp(rcv_play, GAME_WON) != 0) {
+        if(strcmp(rcv_play, GAME_WON) != 0){
           printf("[INFO] Jogada: %s", rcv_play);                              // jogada
-        }
-        else {
+        }else{
           printf("[INFO] Parabéns: %s \n", GAME_WON);                         // jogador vence
           close(strmsock.sd_stream);                                          // fecha o seu socket                    
         }
       }
-    }
-    else if (dif == 2) {
-      if (strlen(argv[1]) != 5) {
+    }else if(dif == 2){
+      if(strlen(argv[1]) != 5){
         printf("[ERRO] Jogada inválida! Introduzir 5 letras (de {ABCDEFGH})");
         return;
       }
 
       strcpy(val_play, argv[1]);
-      for (aux = 0; aux < strlen(val_play); aux++) {
+      for(aux = 0; aux < strlen(val_play); aux++){
         xua = val_play[aux];
-        if (!((xua == 'A') || (xua == 'B') || (xua == 'C') || (xua == 'D') || (xua == 'E') || (xua == 'F') || (xua == 'G') || (xua == 'H'))) {
+        if(!((xua == 'A') || (xua == 'B') || (xua == 'C') || (xua == 'D') || (xua == 'E') || (xua == 'F') || (xua == 'G') || (xua == 'H'))){
           printf("[ERRO] Jogada inválida! Introduzir 5 letras (de {ABCDEFGH})");
           return;
         }
@@ -133,26 +130,25 @@ void cmd_jg(int argc, char** argv) {
 
       cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);
 
-      if ((write(strmsock.sd_stream, &cmd_msg, sizeof(cmd_msg)) < 0)) {
+      if((write(strmsock.sd_stream, &cmd_msg, sizeof(cmd_msg)) < 0)){
         perror("[ERRO] Envio para o servidor. Tentar novamente. \a\n");
         return;
-      }
-      else {
-        while (read(strmsock.sd_stream, rcv_play, sizeof(rcv_play)) < 0);      // adicionar timeout aqui algures
-        if (strcmp(rcv_play, GAME_WON) != 0) {                                  // verifica se o jogador venceu ou não
+      }else{
+        while(read(strmsock.sd_stream, rcv_play, sizeof(rcv_play)) < 0);      // adicionar timeout aqui algures
+        if(strcmp(rcv_play, GAME_WON) != 0){                                  // verifica se o jogador venceu ou não
           printf("[INFO] Jogada: %s", rcv_play);                              // jogada
-        }
-        else {
+        }else{
           printf("[INFO] Parabéns: %s \n", rcv_play);                         // jogador vence
           close(strmsock.sd_stream);                                          // fecha o seu socket
           printf("[INFO] Jogador desconectado do seu socket stream. 'cnj' para criar novo jogo. \n");
         }
       }
-    }
-    else {
+    }else{
       printf("[ERRO] Jogo não inicializado. Tentar novamente. \a\n");
       return;
     }
+  }else{
+    printf("[ERRO] Jogada não processada. Tentar novamente. \n");
   }
 }
 /*-------------------------------------------------------------------------*/
@@ -161,9 +157,14 @@ void cmd_jg(int argc, char** argv) {
 /*-------------------------------------------------------------------------+
 | Function: cmd_clm - consultar limites
 +--------------------------------------------------------------------------*/
-void cmd_clm(int argc, char** argv) {
+void cmd_clm(int argc, char** argv){
   char requested_info[50];
   coms_t cmd_msg;
+
+  if(argc != 1){
+    printf("[ERRO] Número de argumentos inválido. Escrever 'sos' para consultar ajuda.\n");
+    return;
+  }
 
   // definir o destinatário como o JMMserv
   datsock.to_d.sun_family = AF_UNIX;
@@ -173,19 +174,42 @@ void cmd_clm(int argc, char** argv) {
 
   cmd_msg.command = CLM;
 
-  if (sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0) {
+  /*
+  struct timeval timeout;
+  timeout.tv_sec = 10;               // definir tempo timeout: 3seg
+  timeout.tv_usec = 0;              // definir tempo timeout: 0useg
+  
+  setsockopt(datsock.sd_datagram, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+  */
+  ///*
+  if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0){
     printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \a\n");
     return;       // volta para a "linha de comandos"
-  }
-  else {
-    if (recvfrom(datsock.sd_datagram, requested_info, sizeof(requested_info), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0) {
+  }else{
+    if(recvfrom(datsock.sd_datagram, requested_info, sizeof(requested_info), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0){
       printf("[ERRO] Receção de informação do servidor. Tentar novamente. \a\n");
       return;     // volta para a "linha de comandos"                                            
+    }else{
+      printf("[INFO] Informação recebida: %s", requested_info);
     }
-    else {
+  }
+  //*/
+
+  /*
+  if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0){
+    printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \a\n");
+    return;       // volta para a "linha de comandos"
+  }else{
+    if((recvfrom(datsock.sd_datagram, requested_info, sizeof(requested_info), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0) && errno == EWOULDBLOCK){
+      printf("[ERRO] Tempo expirou. Tentar novamente. \a\n");
+      return;     // volta para a "linha de comandos"                                            
+    }else if(recvfrom(datsock.sd_datagram, requested_info, sizeof(requested_info), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0){
+      printf("[ERRO] Receção de informação do servidor. Tentar novamente. \a\n");
+    }else{
       printf("[INFO] Informação recebida: %s\n", requested_info);
     }
   }
+  */
 }
 /*-------------------------------------------------------------------------*/
 
@@ -193,39 +217,35 @@ void cmd_clm(int argc, char** argv) {
 /*-------------------------------------------------------------------------+
 | Function: cmd_mlm - mudar limites
 +--------------------------------------------------------------------------*/
-void cmd_mlm(int argc, char** argv) {
+void cmd_mlm(int argc, char** argv){
   char mlm_msg[50];
   coms_t cmd_msg;
 
-  // definir o destinatário como o JMMserv
-  datsock.to_d.sun_family = AF_UNIX;
-  memset(datsock.to_d.sun_path, 0, sizeof(datsock.to_d.sun_path));
-  strcpy(datsock.to_d.sun_path, JMMSERVSD);
-  datsock.tolen_d = sizeof(datsock.my_addr_d.sun_family) + strlen(datsock.to_d.sun_path);
+  if(argc == 3){
+    // definir o destinatário como o JMMserv
+    datsock.to_d.sun_family = AF_UNIX;
+    memset(datsock.to_d.sun_path, 0, sizeof(datsock.to_d.sun_path));
+    strcpy(datsock.to_d.sun_path, JMMSERVSD);
+    datsock.tolen_d = sizeof(datsock.my_addr_d.sun_family) + strlen(datsock.to_d.sun_path);
 
-  if (argc == 3) {
-    if ((atoi(argv[1]) > 0) && ((atoi(argv[2])) > 0)) {
+    if((atoi(argv[1]) > 0) && ((atoi(argv[2])) > 0)){
       cmd_msg.command = MLM; cmd_msg.arg1.j = atoi(argv[1]); cmd_msg.arg2.t = atoi(argv[2]);
 
-      if (sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0) {
+      if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0){
         printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \a\n");             // envio falhou
-        return;                                                                         // volta para a "linha de comandos"
-      }
-      else {
-        if (recvfrom(datsock.sd_datagram, mlm_msg, sizeof(mlm_msg), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0) {
+        return;                                                                           // volta para a "linha de comandos"
+      }else{
+        if(recvfrom(datsock.sd_datagram, mlm_msg, sizeof(mlm_msg), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0){
           printf("[ERRO] Receção de informação do servidor. Tentar novamente. \a\n");     // receção falhou
-          return;                                                                       // volta para a "linha de comandos"                                            
-        }
-        else {
+          return;                                                                         // volta para a "linha de comandos"                                            
+        }else{
           printf("[INFO] %s\n", mlm_msg);
         }
       }
-    }
-    else {
+    }else{
       printf("[ERRO] Argumento(s) fora dos limites válidos. Tentar novamente. \n");
     }
-  }
-  else {
+  }else{
     printf("[ERRO] Número de argumentos inválido. Escrever 'sos' para consultar ajuda.\n");
   }
 }
@@ -235,9 +255,14 @@ void cmd_mlm(int argc, char** argv) {
 /*-------------------------------------------------------------------------+
 | Function: cmd_cer - consultar estado
 +--------------------------------------------------------------------------*/
-void cmd_cer(int argc, char** argv) {
+void cmd_cer(int argc, char** argv){
   coms_t cmd_msg;
   char cer_msg[60];
+
+  if(argc != 1){
+    printf("[ERRO] Número de argumentos inválido. Escrever 'sos' para consultar ajuda.\n");
+    return;
+  }
 
   // definir o destinatário como o JMMserv
   datsock.to_d.sun_family = AF_UNIX;
@@ -247,16 +272,14 @@ void cmd_cer(int argc, char** argv) {
 
   cmd_msg.command = CER;
 
-  if (sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0) {
+  if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0){
     printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \a\n");
     return;       // volta para a "linha de comandos"
-  }
-  else {
-    if (recvfrom(datsock.sd_datagram, cer_msg, sizeof(cer_msg), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0) {
+  }else{
+    if(recvfrom(datsock.sd_datagram, cer_msg, sizeof(cer_msg), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0){
       printf("[ERRO] Receção de informação do servidor. Tentar novamente. \a\n");
       return;     // volta para a "linha de comandos"                                            
-    }
-    else {
+    }else{
       printf("%s", cer_msg);
     }
   }
@@ -267,9 +290,14 @@ void cmd_cer(int argc, char** argv) {
 /*-------------------------------------------------------------------------+
 | Function: cmd_aer - activar envio
 +--------------------------------------------------------------------------*/
-void cmd_aer(int argc, char** argv) {
+void cmd_aer(int argc, char** argv){
   coms_t cmd_msg;
   char aer_msg[60];
+
+  if(argc != 1){
+    printf("[ERRO] Número de argumentos inválido. Escrever 'sos' para consultar ajuda.\n");
+    return;
+  }
 
   // definir o destinatário como o JMMserv
   datsock.to_d.sun_family = AF_UNIX;
@@ -279,16 +307,14 @@ void cmd_aer(int argc, char** argv) {
 
   cmd_msg.command = AER;
 
-  if (sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0) {
+  if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0){
     printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \a\n");
     return;       // volta para a "linha de comandos"
-  }
-  else {
-    if (recvfrom(datsock.sd_datagram, aer_msg, sizeof(aer_msg), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0) {
+  }else{
+    if(recvfrom(datsock.sd_datagram, aer_msg, sizeof(aer_msg), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0){
       printf("[ERRO] Receção de informação do servidor. Tentar novamente. \a\n");
       return;     // volta para a "linha de comandos"                                            
-    }
-    else {
+    }else{
       printf("%s", aer_msg);
     }
   }
@@ -299,9 +325,14 @@ void cmd_aer(int argc, char** argv) {
 /*-------------------------------------------------------------------------+
 | Function: cmd_der - desactivar envio
 +--------------------------------------------------------------------------*/
-void cmd_der(int argc, char** argv) {
+void cmd_der(int argc, char** argv){
   coms_t cmd_msg;
   char der_msg[60];
+
+  if(argc != 1){
+    printf("[ERRO] Número de argumentos inválido. Escrever 'sos' para consultar ajuda.\n");
+    return;
+  }
 
   // definir o destinatário como o JMMserv
   datsock.to_d.sun_family = AF_UNIX;
@@ -311,16 +342,14 @@ void cmd_der(int argc, char** argv) {
 
   cmd_msg.command = DER;
 
-  if (sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0) {
+  if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0){
     printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \a\n");
     return;       // volta para a "linha de comandos"
-  }
-  else {
-    if (recvfrom(datsock.sd_datagram, der_msg, sizeof(der_msg), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0) {
+  }else{
+    if(recvfrom(datsock.sd_datagram, der_msg, sizeof(der_msg), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0){
       printf("[ERRO] Receção de informação do servidor. Tentar novamente. \a\n");
       return;     // volta para a "linha de comandos"                                            
-    }
-    else {
+    }else{
       printf("%s", der_msg);
     }
   }
@@ -334,16 +363,22 @@ void cmd_der(int argc, char** argv) {
 void cmd_tmm(int argc, char** argv) {
   coms_t cmd_msg = { .command = TMM };
 
+  if(argc != 1){
+    printf("[ERRO] Número de argumentos inválido. Escrever 'sos' para consultar ajuda.\n");
+    return;
+  }
+
   // definir o destinatário como o JMMserv
   datsock.to_d.sun_family = AF_UNIX;
   memset(datsock.to_d.sun_path, 0, sizeof(datsock.to_d.sun_path));
   strcpy(datsock.to_d.sun_path, JMMSERVSD);
   datsock.tolen_d = sizeof(datsock.my_addr_d.sun_family) + strlen(datsock.to_d.sun_path);
 
-  if (sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0) {
+  if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0){
     printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \a\n");
     return;       // volta para a "linha de comandos"
   }
+
   printf("[INFO] Abortar: Terminar servidor de jogo. \n");
 }
 /*-------------------------------------------------------------------------*/
@@ -358,7 +393,7 @@ void cmd_tmm(int argc, char** argv) {
 void cmd_ltc(int argc, char** argv) {
   log_single_tab_t msg_tab_recieved;
 
-  if ((argc == 2) && (atoi(argv[1]) >= 0) && (atoi(argv[1]) <= 2)) {
+  if((argc == 2) && (atoi(argv[1]) >= 0) && (atoi(argv[1]) <= 2)){
     coms_t cmd_msg = { .command = LTC, .arg1.n = atoi(argv[1]) };       // comando =LTC e n=nível=2º argumento
 
     // definir o destinatário como o JMMlogsd
@@ -367,46 +402,43 @@ void cmd_ltc(int argc, char** argv) {
     strcpy(datsock.to_d.sun_path, JMMLOGSD);
     datsock.tolen_d = sizeof(datsock.my_addr_d.sun_family) + strlen(datsock.to_d.sun_path);
 
-    if (sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0) {
+    if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0){
       perror("[ERRO] Envio de pedido para o servidor. Tentar novamente. \a\n");
-    }
-    else {
-      switch (cmd_msg.arg1.n) {
+    }else{
+      switch(cmd_msg.arg1.n){
+        case DIFF_ALL:
+          if(recvfrom(datsock.sd_datagram, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0)
+            perror("[ERRO] Receção de dados do servidor. Tentar novamente. \a\n");
+          else
+            print_log_tabs(&msg_tab_recieved);
 
-      case DIFF_ALL:
-        if (recvfrom(datsock.sd_datagram, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0)
-          perror("[ERRO] Receção de dados do servidor. Tentar novamente. \a\n");
-        else
-          print_log_tabs(&msg_tab_recieved);
+          if(recvfrom(datsock.sd_datagram, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0)
+            perror("[ERRO] Receção de dados do servidor. Tentar novamente. \a\n");
+          else
+            print_log_tabs(&msg_tab_recieved);
+          break;
 
-        if (recvfrom(datsock.sd_datagram, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0)
-          perror("[ERRO] Receção de dados do servidor. Tentar novamente. \a\n");
-        else
-          print_log_tabs(&msg_tab_recieved);
-        break;
+        case DIFF_1:
+          if(recvfrom(datsock.sd_datagram, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0)
+            perror("[ERRO] Receção de dados do servidor. Tentar novamente. \a\n");
+          else
+            print_log_tabs(&msg_tab_recieved);
+          break;
 
-      case DIFF_1:
-        if (recvfrom(datsock.sd_datagram, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0)
-          perror("[ERRO] Receção de dados do servidor. Tentar novamente. \a\n");
-        else
-          print_log_tabs(&msg_tab_recieved);
-        break;
+        case DIFF_2:
+          if(recvfrom(datsock.sd_datagram, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0)
+            perror("[ERRO] Receção de dados do servidor. Tentar novamente. \a\n");
+          else
+            print_log_tabs(&msg_tab_recieved);
+          break;
 
-      case DIFF_2:
-        if (recvfrom(datsock.sd_datagram, &msg_tab_recieved, sizeof(msg_tab_recieved), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d) < 0)
-          perror("[ERRO] Receção de dados do servidor. Tentar novamente. \a\n");
-        else
-          print_log_tabs(&msg_tab_recieved);
-        break;
-
-      default:
-        printf("[ERRO] INESPERADO \a\n");
-        return;
+        default:
+          printf("[ERRO] INESPERADO \a\n");
+          return;
 
       }
     }
-  }
-  else {
+  }else{
     printf("[ERRO] Número inválido de argumentos. Tentar Novamente. \n");
     return;
   }
@@ -417,8 +449,8 @@ void cmd_ltc(int argc, char** argv) {
 /*-------------------------------------------------------------------------+
 | Function: cmd_rtc - reiniciar tabelas de classificação
 +--------------------------------------------------------------------------*/
-void cmd_rtc(int argc, char** argv) {
-  if ((argc == 2) && (atoi(argv[1]) >= 0) && (atoi(argv[1]) <= 2)) {
+void cmd_rtc(int argc, char** argv){
+  if((argc == 2) && (atoi(argv[1]) >= 0) && (atoi(argv[1]) <= 2)){
     coms_t cmd_msg = { .command = RTC, .arg1.n = atoi(argv[1]) };
 
     // definir o destinatário como o JMMlogsd
@@ -427,11 +459,10 @@ void cmd_rtc(int argc, char** argv) {
     strcpy(datsock.to_d.sun_path, JMMLOGSD);
     datsock.tolen_d = sizeof(datsock.my_addr_d.sun_family) + strlen(datsock.to_d.sun_path);
 
-    if (sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0) {
+    if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0){
       perror("[ERRO] Envio de pedido para o servidor. Tentar novamente. \a\n");
     }
-  }
-  else {
+  }else{
     printf("[ERRO] Número inválido de argumentos. Tentar Novamente. \n");
     return;
   }
@@ -442,8 +473,13 @@ void cmd_rtc(int argc, char** argv) {
 /*-------------------------------------------------------------------------+
 | Function: cmd_trh - terminar processo de registo histórico
 +--------------------------------------------------------------------------*/
-void cmd_trh(int argc, char** argv) {
+void cmd_trh(int argc, char** argv){
   coms_t cmd_msg = { .command = TRH };
+
+  if(argc != 1){
+    printf("[ERRO] Número de argumentos inválido. Escrever 'sos' para consultar ajuda.\n");
+    return;
+  }
 
   // definir o destinatário como o JMMlogsd
   datsock.to_d.sun_family = AF_UNIX;
@@ -451,7 +487,7 @@ void cmd_trh(int argc, char** argv) {
   strcpy(datsock.to_d.sun_path, JMMLOGSD);
   datsock.tolen_d = sizeof(datsock.my_addr_d.sun_family) + strlen(datsock.to_d.sun_path);
 
-  if (sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0) {
+  if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0){
     printf("[ERRO] Envio de pedido ao servidor. Tentar novamente. \a\n");
     return;       // volta para a "linha de comandos"
   }
@@ -463,7 +499,7 @@ void cmd_trh(int argc, char** argv) {
 /*-------------------------------------------------------------------------+
 | Function: cmd_sair - termina a aplicacao
 +--------------------------------------------------------------------------*/
-void cmd_sair(int argc, char** argv) {        // POSSO FAZER close(..) ou unlink(..) A COISAS QUE NÃO EXISTEM? OU SEJA SD AINDA NÃO TINHA SIDO CRIADO P.E.
+void cmd_sair(int argc, char** argv){
   printf("\n[INFO] A sair... \n");
   close(strmsock.sd_stream);
   unlink(datsock.my_addr_d.sun_path);
@@ -493,11 +529,11 @@ void cmd_test(int argc, char** argv) {
 
 
 // Function to print log_tabs_t
-void print_log_tabs(log_single_tab_t* log_tab) {
+void print_log_tabs(log_single_tab_t* log_tab){
   printf("=== LOG TABELA %d  (nº jogos: %d)===\n", log_tab->tb_diff, log_tab->tb_n_games);
 
   // mostrar cada registo de histórico de jogo
-  for (int i = 0; i < log_tab->tb_n_games && i < TOPN; i++) {
+  for(int i = 0; i < log_tab->tb_n_games && i < TOPN; i++){
     printf("Game %d:\n", i);
     printf("  Difficulty: %d\n", log_tab->tb[i].nd);
     printf("  Player: %s\n", log_tab->tb[i].nj);
@@ -505,7 +541,6 @@ void print_log_tabs(log_single_tab_t* log_tab) {
     printf("  Start Time: %s", ctime(&log_tab->tb[i].ti));
     printf("  End Time: %s", ctime(&log_tab->tb[i].tf));
   }
-
 
   printf("================\n");
 }
