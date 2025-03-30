@@ -32,7 +32,7 @@ void termination_handler()
   if (mq_unlink(JMMLOGQ) < 0) {
     perror("{LOG}[ERROR]termination_handler: Erro a eliminar queue");
   }
-  printf("{LOG}termination_handler: queue eliminada de forma limpa\n");
+  printf("{LOG}[INFO]termination_handler: queue eliminada de forma limpa\n");
 
   exit(0);
   return;
@@ -56,7 +56,7 @@ int main()
   char buffer_send[100]; //buffer para mensagem de resposta
   log_single_tab_t msg_tab_send; //tabelas de jogo a enviar para JMMapl
 
-  printf("{LOG}A começar JMMlog (PID=%d)\n", getpid());
+  printf("{LOG}[INFO]A começar JMMlog (PID=%d)\n", getpid());
 
   // definir termination signal handler 
   if (signal(SIGTERM, termination_handler) == SIG_ERR) {
@@ -67,7 +67,7 @@ int main()
   }
 
   if (pthread_mutex_init(&file_mux, NULL) != 0) {
-    printf("{LOG}Erro a inicializar mutex\n");
+    printf("{LOG}[INFO]Erro a inicializar mutex\n");
     return -1;
   }
 
@@ -76,9 +76,9 @@ int main()
   open_file(&mfd, &tabel_pt);
 
   //* começar thread_queue_handler -- comunicação com JMMserv
-  printf("{LOG}main: criar thread Queue Handler\n");
+  printf("{LOG}[INFO]main: criar thread Queue Handler\n");
   if (pthread_create(&thread_queue_handler, NULL, queue_handler, NULL) != 0) {
-    printf("{LOG}Erro a criar thread=Queue Handler\n");
+    printf("{LOG}[INFO]Erro a criar thread=Queue Handler\n");
   }
 
 
@@ -103,11 +103,11 @@ int main()
     fromlen = sizeof(from);
     if (recvfrom(socket_d, &msg_recieved, sizeof(msg_recieved), 0, (struct sockaddr*)&from, &fromlen) < 0)    perror("{LOG}[ERROR]Erro no recvfrom");
     else {
-      printf("{LOG}SERV: Recebi: cmd=%i n=%d Path: %s\n", msg_recieved.command, msg_recieved.arg1.n, from.sun_path);
+      printf("{LOG}[INFO]SERV: Recebi: cmd=%i n=%d Path: %s\n", msg_recieved.command, msg_recieved.arg1.n, from.sun_path);
 
       //************** - ltc: listar tabela(s) classificação nível n (0-todos)
       if (msg_recieved.command == LTC) {
-        printf("{LOG}listar tabela(s) classificação nível n=%i\n", msg_recieved.arg1.n);
+        printf("{LOG}[INFO]listar tabela(s) classificação nível n=%i\n", msg_recieved.arg1.n);
 
         pthread_mutex_lock(&file_mux);  //entra na zona critical
         switch (msg_recieved.arg1.n) {
@@ -152,6 +152,8 @@ int main()
       //************** - comando não válido
       else {
         perror("{LOG}[ERROR]comando recebido inválido\n");
+        sprintf(buffer_send, "[ERROR]comando recebido inválido\n");
+        if (sendto(socket_d, buffer_send, strlen(buffer_send) + 1, 0, (struct sockaddr*)&from, fromlen) < 0) perror("{LOG}[ERROR]Erro no sendto\n");
       }
 
     }
@@ -327,7 +329,7 @@ void del_tab_n(int diff) {
     break;
 
   default:
-    printf("{LOG}del_tab_n: difficuldade inválida\n");
+    printf("{LOG}[INFO]del_tab_n: difficuldade inválida\n");
     break;
   }
 }
