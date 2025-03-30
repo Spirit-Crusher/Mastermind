@@ -52,7 +52,9 @@ int main()
   socklen_t fromlen;
   coms_t msg_recieved;
 
-  log_single_tab_t msg_tab_send;
+  // variáveis de comunicação com JMMapl
+  char buffer_send[100]; //buffer para mensagem de resposta
+  log_single_tab_t msg_tab_send; //tabelas de jogo a enviar para JMMapl
 
   printf("{LOG}A começar JMMlog (PID=%d)\n", getpid());
 
@@ -124,22 +126,26 @@ int main()
           if (sendto(socket_d, &msg_tab_send, sizeof(log_single_tab_t), 0, (struct sockaddr*)&from, fromlen) < 0) perror("{LOG}[ERROR]Erro no sendto\n");
           break;
         default:
-          printf("{LOG}main: difficuldade inválida\n");
+          printf("{LOG}[INFO]main: difficuldade inválida\n");
           break;
         }
         pthread_mutex_unlock(&file_mux);  //sair da zona crítica
       }
       //************** - rtc: reinicializar tabela(s) classificação nível n (0-todos)
       else if (msg_recieved.command == RTC) {
-        printf("{LOG}reinicializar tabela(s) classificação nível n=%i\n", msg_recieved.arg1.n);
+        printf("{LOG}[INFO]reinicializar tabela(s) classificação nível n=%i\n", msg_recieved.arg1.n);
         pthread_mutex_lock(&file_mux);  //entra na zona critical
         del_tab_n(msg_recieved.arg1.n);
         pthread_mutex_unlock(&file_mux);  //sair da zona crítica
-      }
+        sprintf(buffer_send, "[INFO]tabela(s) reinicializada(s) com sucesso\n");
+        if (sendto(socket_d, buffer_send, strlen(buffer_send) + 1, 0, (struct sockaddr*)&from, fromlen) < 0) perror("{LOG}[ERROR]Erro no sendto\n");
+        }
 
       //************** - trh: terminar processo de registo histórico (JMMlog)
       else if (msg_recieved.command == TRH) {
         printf("{LOG}terminar processo de registo histórico (JMMlog)\n");
+        sprintf(buffer_send, "[INFO] O log server vai terminar agora. Adeus.\n");
+        if (sendto(socket_d, buffer_send, strlen(buffer_send) + 1, 0, (struct sockaddr*)&from, fromlen) < 0) perror("{LOG}[ERROR]Erro no sendto\n");
         termination_handler();
       }
 
