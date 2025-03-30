@@ -100,7 +100,7 @@ DATAGRAM create_sock(void){
 /*-------------------------------------------------------------------------+
 | Function: monitor        (called from main) 
 +--------------------------------------------------------------------------*/ 
-void monitor(DATAGRAM datsock){
+void monitor(){
   static char *argv[ARGVECSIZE + 1], *p;
   int argc, i;
 
@@ -119,5 +119,5 @@ void monitor(DATAGRAM datsock){
       else  
 	printf("%s", InvalMsg);
     } /* if my_getline */
-  } /* forever */
+  }
 }

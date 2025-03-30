@@ -1,6 +1,11 @@
 {
     "files.associations": {
         "string.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "cliente.h": "c",
+        "mastermind.h": "c",
+        "errno.h": "c",
+        "syscall.h": "c",
+        "unistd.h": "c"
     }
 }
