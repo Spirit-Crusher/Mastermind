@@ -4,6 +4,7 @@
         "fcntl.h": "c",
         "typeinfo": "c",
         "stdio.h": "c",
-        "cmath": "c"
+        "cmath": "c",
+        "cliente.h": "c"
     }
 }
