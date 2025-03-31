@@ -5,6 +5,8 @@
         "typeinfo": "c",
         "stdio.h": "c",
         "cmath": "c",
-        "cliente.h": "c"
+        "cliente.h": "c",
+        "string.h": "c",
+        "select.h": "c"
     }
 }
