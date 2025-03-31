@@ -279,22 +279,25 @@ void save_game(rjg_t log)
 {
     int mqids;
 
+    //tentar abrir queue
     if ((mqids = mq_open(JMMLOGQ, O_RDWR)) < 0) 
     {
         perror("{SERVER} [ERRO] Erro a associar a queue servidor\n\a");
         printf("{SERVER} [INFO] Vou fazer o system\n");
         system(log_server); //se falhou começar log_server
-        sleep(1);
+        sleep(1); //esperar inicialização do servidor
         printf("{SERVER} [INFO] Servidor iniciou log_server\n");
 
+        //tentar novamente
         if ((mqids = mq_open(JMMLOGQ, O_RDWR)) < 0)
         {
             perror("{SERVER} [ERRO] Servidor não conseguiu abrir queue do log\n\a");
-            return;
+            return; //se falhou novamente, desistir
         }
 
     }
 
+    //enviar registo ao log_server
     printf("{SERVER} [INFO] A enviar jogo ao log_server, MQIDS:%d\n", mqids);
     if (mq_send(mqids, (char*)&log, sizeof(log), 0) < 0) 
     {
@@ -307,11 +310,12 @@ void save_game(rjg_t log)
 
 void* thread_func_gameinstance(void* game_info)
 {
-    new_game_info info = (*(new_game_info*)game_info); //TODO: why not just use the struct directly? instead of creating new variables
+    new_game_info info = (*(new_game_info*)game_info);
     coms_t buffer_stream = info.buffer_s;
     int game_number = info.game_number;
     int socket = info.sd;
     char result[100];
+    int bytes;
 
     printf("{SERVER} [INFO] Esta é a socket e o game number do novo jogador: %d:%d\n", socket, game_number);
 
@@ -331,16 +335,35 @@ void* thread_func_gameinstance(void* game_info)
     create_new_game(current_game, socket, buffer_stream);
     printf("{SERVER} [INFO] Jogo nº%d foi iniciado\n", game_number);
 
+    struct timeval timeout = {.tv_sec = 3, .tv_usec = 0};
+    setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
     do
     {
-        //ler jogadas do jogador e processar as mesmas enquanto o jogo estiver a decorrer
-        if (read(socket, &buffer_stream, sizeof(buffer_stream)) <= 0)
+        while ((time(NULL)-current_game->log.ti) < current_game->game_rules.maxt) //verificar se tempo máximo foi atingido
         {
-            perror("{SERVER} [AVISO] Cliente desconectou-se\n\a");
-            break;
+            //ler jogadas do jogador e processar as mesmas enquanto o jogo estiver a decorrer
+            bytes = read(socket, &buffer_stream, sizeof(buffer_stream));
+            printf("{SERVER} [INFO] Bytes: %d\n", bytes);
+            if (bytes <= 0 && errno != EWOULDBLOCK)
+            {
+                //jogador disconectou-se
+                current_game->game_state = DISCONNECT;
+                break;
+            }
+            else if (errno == EWOULDBLOCK)
+            {
+                //vamos tentar ler novamente
+                current_game->game_state = DISCONNECT;
+                continue;
+            }
+            else
+            {
+                //processar request
+                stream_handler(socket, current_game, buffer_stream);
+                break;
+            } 
         }
-
-        stream_handler(socket, current_game, buffer_stream); //processar request
 
         switch (current_game->game_state)
         {
@@ -388,6 +411,11 @@ void* thread_func_gameinstance(void* game_info)
                 else printf("{SERVER} [INFO] Ledger desligado\n");
                 break;
 
+            case DISCONNECT:
+                //fazer disconexão do cliente
+                printf("{SERVER} [AVISO] Cliente desconectou-se\n\a");
+                break;
+
             default:
                 if (write(socket, GAME_CRASHED, strlen(GAME_CRASHED) + 1) < 0)
                 {
@@ -412,11 +440,9 @@ void* thread_func_gameinstance(void* game_info)
 void* thread_func_acceptgames()
 {
     coms_t buffer_stream;
-    int new_sock; //client specific socket descriptor
+    int new_sock;
     struct sockaddr_un streamsv_addr;
     socklen_t streamsv_addrlen;
-    /*fd_set rfds; //set dos descriptors das sockets
-    int client_sockets_fd[NJMAX] = {0}; //array com socket descriptors de todos os clientes*/
 
     //criação da socket stream
     if ((sd_stream = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
@@ -440,7 +466,6 @@ void* thread_func_acceptgames()
         perror("{SERVER} [ERRO] Não consegui dar bind da socket stream\n\a");
         exit_handler();
     }
-
 
     //socket stream vai ficar a ouvir requests para conectar e aceitará apenas um máximo de NJMAX clientes
     if (listen(sd_stream, NJMAX) < 0)
@@ -538,7 +563,6 @@ int main()
         printf("{SERVER} [ERRO] Erro a inicializar mutex\n");
     }
     
-
     //iniciar thread aceita jogos
     if (pthread_create(&thread_acceptgames, NULL, thread_func_acceptgames, NULL) != 0)
     {
@@ -573,7 +597,7 @@ int main()
     while (true)
     {
         client_addrlen = sizeof(client_addr);
-        if (recvfrom(sd_datagram, &buffer_dgram, sizeof(buffer_dgram), 0, (struct sockaddr*)&client_addr, &client_addrlen) < 0)
+        if (recvfrom(sd_datagram, &buffer_dgram, sizeof(buffer_dgram), 0, (struct sockaddr*)&client_addr, &client_addrlen) <= 0)
         {
             perror("{SERVER} [ERRO] Erro na recepção de datagrama\n\a");
         }

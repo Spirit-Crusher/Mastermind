@@ -37,7 +37,8 @@
 #define GAME_LOST_TIME "{SERVER} [INFO] GAME OVER. TIME RAN OUT"
 #define GAME_LOST_TRIES "{SERVER} [INFO] GAME OVER. TOO MANY TRIES"
 #define GAME_WON "{SERVER} [INFO] WINNER!"
-#define GAME_CRASHED "{SERVER} [ERROR] YOUR GAME HAS CRASHED"
+#define GAME_CRASHED "{SERVER} [ERRO] YOUR GAME HAS CRASHED"
+#define GAME_DISCONNECT "{SERVER} [ERRO] GAME DISCONNECTED"
 
 /****************** Enums *******************/
 typedef enum
@@ -53,6 +54,7 @@ typedef enum
   PLAYER_WIN,
   PLAYER_LOST_TIME,
   PLAYER_LOST_TRIES,
+  DISCONNECT,
 } game_state_t;
 
 typedef enum
