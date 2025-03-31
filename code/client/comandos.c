@@ -63,7 +63,7 @@ void cmd_cnj(int argc, char** argv){
         bytes = read(strmsock.sd_stream, buf_s, sizeof(buf_s)); 
         if(bytes == EWOULDBLOCK){                                             // tempo expirou
           printf("[ERRO] Tempo expirou. Tentar novamente. \a\n");
-        }else if(bytes < 0){                                                  // leitura falhou
+        }else if(bytes <= 0){                                                  // leitura falhou
           printf("[ERRO] Receção de informação do servidor. Tentar novamente. \a\n");
         }else{
           if(strcmp(buf_s, GAME_DENIED) == 0){
@@ -121,28 +121,6 @@ void cmd_jg(int argc, char** argv){
           return;
         }
       }
-
-      cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);               // comando para o JMMserv
-
-      if((write(strmsock.sd_stream, &cmd_msg, sizeof(cmd_msg)) < 0)){         // tenta enviar
-        perror("[ERRO] Envio para o servidor. Tentar novamente. \a\n");
-        return;
-      }else{                                                                  // enviou
-        bytes = read(strmsock.sd_stream, rcv_play, sizeof(rcv_play));         // adicionar timeout aqui algures
-        if(bytes == EWOULDBLOCK){                                             // tempo expirou
-          printf("[ERRO] Tempo expirou. Tentar novamente. \a\n");
-        }else if(bytes < 0){                                                  // leitura falhou
-          printf("[ERRO] Receção de informação do servidor. Tentar novamente. \a\n");
-        }else{
-          if(strcmp(rcv_play, GAME_WON) != 0){                                // verifica se o jogador venceu ou não
-            printf("%s", rcv_play);                                           // jogada
-          }else{
-            printf("[INFO] Parabéns: %s \n", rcv_play);                       // jogador vence
-            close(strmsock.sd_stream);                                        // fecha o seu socket
-            printf("[INFO] Jogador desconectado do seu socket stream. 'cnj' para criar novo jogo. \n");
-          }
-        }
-      }
     }else if(dif == 2){                                                       // dificuldade igual a 2
       if(strlen(argv[1]) != 5){
         printf("[ERRO] Jogada inválida! Introduzir 5 letras (de {ABCDEFGH})\n");
@@ -162,31 +140,31 @@ void cmd_jg(int argc, char** argv){
           return;
         }
       }
-
-      cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);               // jogada a enviar ao JMMserv
-
-      if((write(strmsock.sd_stream, &cmd_msg, sizeof(cmd_msg)) < 0)){         // tentar enviar
-        perror("[ERRO] Envio para o servidor. Tentar novamente. \a\n");
-        return;
-      }else{                                                                  // enviou
-        bytes = read(strmsock.sd_stream, rcv_play, sizeof(rcv_play));         // adicionar timeout aqui algures
-        if(bytes == EWOULDBLOCK){                                             // tempo expirou
-          printf("[ERRO] Tempo expirou. Tentar novamente. \a\n");
-        }else if(bytes < 0){                                                  // leitura falhou
-          printf("[ERRO] Receção de informação do servidor. Tentar novamente. \a\n");
-        }else{
-          if(strcmp(rcv_play, GAME_WON) != 0){                                // verifica se o jogador venceu ou não
-            printf("%s", rcv_play);                                           // jogada
-          }else{
-            printf("[INFO] Parabéns: %s \n", rcv_play);                       // jogador vence
-            close(strmsock.sd_stream);                                        // fecha o seu socket
-            printf("[INFO] Jogador desconectado do seu socket stream. 'cnj' para criar novo jogo. \n");
-          }
-        }
-      }
     }else{                                                                    // algum erro estranho
       printf("[ERRO] Jogo não inicializado. Tentar novamente. \a\n");
       return;
+    }
+
+    cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);               // jogada a enviar ao JMMserv
+
+    if((write(strmsock.sd_stream, &cmd_msg, sizeof(cmd_msg)) < 0)){         // tentar enviar
+      perror("[ERRO] Envio para o servidor. Tentar novamente. \a\n");
+      return;
+    }else{                                                                  // enviou
+      bytes = read(strmsock.sd_stream, rcv_play, sizeof(rcv_play));         // adicionar timeout aqui algures
+      if(bytes == EWOULDBLOCK){                                             // tempo expirou
+        printf("[ERRO] Tempo expirou. Tentar novamente. \a\n");
+      }else if(bytes <= 0){                                                 // leitura falhou
+        printf("[ERRO] Receção de informação do servidor. Tentar novamente. \a\n");
+      }else{
+        if(strcmp(rcv_play, GAME_WON) != 0){                                // verifica se o jogador venceu ou não
+          printf("%s", rcv_play);                                           // jogada
+        }else{
+          printf("[INFO] Parabéns: %s \n", rcv_play);                       // jogador vence
+          close(strmsock.sd_stream);                                        // fecha o seu socket
+          printf("[INFO] Jogador desconectado do seu socket stream. 'cnj' para criar novo jogo. \n");
+        }
+      }
     }
   }else{                                                                      // argumentos errados ou socket fechado somehow
     printf("[ERRO] Jogada não processada. Tentar novamente. \n");
@@ -229,10 +207,10 @@ void cmd_clm(int argc, char** argv){
     bytes = recvfrom(datsock.sd_datagram, requested_info, sizeof(requested_info), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d);
     if((bytes == EWOULDBLOCK))                                                // tempo expirou
       printf("[ERRO] Tempo expirou. Tentar novamente. \a\n");                                           
-    else if(bytes < 0)                                                        // leitura falhou
+    else if(bytes <= 0)                                                       // leitura falhou
       printf("[ERRO] Receção de informação do servidor. Tentar novamente. \a\n");                                                  
     else                                                                      // recebeu a informação do JMMserv
-      printf("[INFO] Informação recebida: %s\n", requested_info);             // mostra mensagem do JMMserv
+      printf("[INFO] Informação recebida: %s", requested_info);               // mostra mensagem do JMMserv
   }
 }
 /*-------------------------------------------------------------------------*/
@@ -269,7 +247,7 @@ void cmd_mlm(int argc, char** argv){
         bytes = recvfrom(datsock.sd_datagram, mlm_msg, sizeof(mlm_msg), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d);
         if(bytes == EWOULDBLOCK)                                              // tempo expirou
           printf("[ERRO] Tempo expirou. Tentar novamente. \a\n");                                         
-        else if(bytes < 0)                                                    // leitura falhou
+        else if(bytes <= 0)                                                   // leitura falhou
           printf("[ERRO] Receção de informação do servidor. Tentar novamente. \a\n");
         else
           printf("%s", mlm_msg);                                              // mostra mensagem do JMMserv
@@ -285,7 +263,7 @@ void cmd_mlm(int argc, char** argv){
 
 
 /*-------------------------------------------------------------------------+
-| Function: cmd_cer - consultar estado
+| Function: cmd_cer - consultar estado de envio para o JMMlog
 +--------------------------------------------------------------------------*/
 void cmd_cer(int argc, char** argv){
   char cer_msg[MAX_RCV_SIZE];                                                 // mensagem a receber
@@ -318,7 +296,7 @@ void cmd_cer(int argc, char** argv){
     bytes = recvfrom(datsock.sd_datagram, cer_msg, sizeof(cer_msg), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d);
     if(bytes == EWOULDBLOCK)                                                  // tempo expirou
       printf("[ERRO] Tempo expirou. Tentar novamente. \a\n");
-    else if(bytes < 0)                                                        // leitura falhou
+    else if(bytes <= 0)                                                       // leitura falhou
       printf("[ERRO] Receção de informação do servidor. Tentar novamente. \a\n");
     else
       printf("%s", cer_msg);                                                  // mostra mensagem do JMMserv
@@ -328,7 +306,7 @@ void cmd_cer(int argc, char** argv){
 
 
 /*-------------------------------------------------------------------------+
-| Function: cmd_aer - activar envio
+| Function: cmd_aer - activar envio para o JMMlog
 +--------------------------------------------------------------------------*/
 void cmd_aer(int argc, char** argv){
   coms_t cmd_msg;                                                             // comandos a enviar   
@@ -361,7 +339,7 @@ void cmd_aer(int argc, char** argv){
     bytes = recvfrom(datsock.sd_datagram, aer_msg, sizeof(aer_msg), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d);
     if(bytes == EWOULDBLOCK)                                                  // tempo expirou
       printf("[ERRO] Tempo expirou. Tentar novamente. \a\n");                                 
-    else if(bytes < 0)                                                        // leitura falhou
+    else if(bytes <= 0)                                                       // leitura falhou
       printf("[ERRO] Receção de informação do servidor. Tentar novamente. \a\n");
     else
       printf("%s", aer_msg);                                                  // mostra mensagem do JMMserv
@@ -371,7 +349,7 @@ void cmd_aer(int argc, char** argv){
 
 
 /*-------------------------------------------------------------------------+
-| Function: cmd_der - desactivar envio
+| Function: cmd_der - desactivar envio para o JMMlog
 +--------------------------------------------------------------------------*/
 void cmd_der(int argc, char** argv){
   coms_t cmd_msg;                                                             // comandos a enviar 
@@ -404,7 +382,7 @@ void cmd_der(int argc, char** argv){
     bytes = recvfrom(datsock.sd_datagram, der_msg, sizeof(der_msg), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d);
     if(bytes == EWOULDBLOCK)                                                  // tempo expirou
       printf("[ERRO] Tempo expirou. Tentar novamente. \a\n");                                    
-    else if(bytes < 0)                                                        // leitura falhou
+    else if(bytes <= 0)                                                       // leitura falhou
       printf("[ERRO] Receção de informação do servidor. Tentar novamente. \a\n"); 
     else
       printf("%s", der_msg);                                                  // mostra mensagem do JMMserv
@@ -445,7 +423,7 @@ void cmd_tmm(int argc, char** argv){
     bytes = recvfrom(datsock.sd_datagram, tmm_msg, sizeof(tmm_msg), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d);
     if(bytes == EWOULDBLOCK)                                                  // tempo expirou
       printf("[ERRO] Tempo expirou. Tentar novamente. \a\n");                              
-    else if(bytes < 0)                                                        // leitura falhou
+    else if(bytes <= 0)                                                       // leitura falhou
       printf("[ERRO] Receção de informação do servidor. Tentar novamente. \a\n");
     else
       printf("%s", tmm_msg);                                                  // mostra mensagem do JMMlog
@@ -491,14 +469,14 @@ void cmd_ltc(int argc, char** argv) {
           bytes1 = recvfrom(datsock.sd_datagram, &msg_tab_recieved1, sizeof(msg_tab_recieved1), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d);
           if(bytes1 == EWOULDBLOCK){                                          // tempo expirou
             printf("[ERRO] Tempo Expirou. Tentar novamente. \a\n");
-          }else if(bytes1 < 0){                                               // leitura falhou
+          }else if(bytes1 <= 0){                                              // leitura falhou
             printf("[ERRO] Receção de dados do servidor. Tentar novamente. \a\n");
           }else{
             bytes2 = recvfrom(datsock.sd_datagram, &msg_tab_recieved2, sizeof(msg_tab_recieved2), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d);
             if(bytes2 == EWOULDBLOCK){                                        // tempo expirou
               printf("[ERRO] Tempo expirou. Tentar novamente. \a\n");
               break;
-            }else if(bytes2 < 0){                                             // leitura falhou
+            }else if(bytes2 <= 0){                                            // leitura falhou
               printf("[ERRO] Receção de dados do servidor. Tentar novamente. \a\n");             
             }else{
               print_log_tabs(&msg_tab_recieved1);                             // mostra mensagem do JMMlog
@@ -511,7 +489,7 @@ void cmd_ltc(int argc, char** argv) {
           bytes1 = recvfrom(datsock.sd_datagram, &msg_tab_recieved1, sizeof(msg_tab_recieved1), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d);
           if(bytes1 == EWOULDBLOCK)                                           // tempo expirou
             printf("[ERRO] Tempo expirou. Tentar novamente. \a\n");
-          else if(bytes1 < 0)                                                 // leitura falhou
+          else if(bytes1 <= 0)                                                // leitura falhou
             printf("[ERRO] Receção de dados do servidor. Tentar novamente. \a\n");
           else
             print_log_tabs(&msg_tab_recieved1);                               // mostra mensagem do JMMlog
@@ -521,7 +499,7 @@ void cmd_ltc(int argc, char** argv) {
           bytes2 = recvfrom(datsock.sd_datagram, &msg_tab_recieved2, sizeof(msg_tab_recieved2), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d);
           if(bytes2 == EWOULDBLOCK)                                           // tempo expirou
             printf("[ERRO] Tempo expirou. Tentar novamente. \a\n");
-          else if(bytes2 < 0)                                                 // leitura falhou
+          else if(bytes2 <= 0)                                                // leitura falhou
             perror("[ERRO] Receção de dados do servidor. Tentar novamente. \a\n");
           else
             print_log_tabs(&msg_tab_recieved2);                               // mostra mensagem do JMMlog
@@ -569,7 +547,7 @@ void cmd_rtc(int argc, char** argv){
       bytes = recvfrom(datsock.sd_datagram, rtc_msg, sizeof(rtc_msg), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d);
       if(bytes == EWOULDBLOCK)                                                // tempo expirou
         printf("[ERRO] Tempo expirou. Tentar novamente");                                 
-      else if(bytes < 0)                                                      // leitura falhou
+      else if(bytes <= 0)                                                     // leitura falhou
         printf("[ERRO] Receção de informação do servidor. Tentar novamente. \a\n");
       else
         printf("%s", rtc_msg);                                                // mostra mensagem do JMMlog
@@ -612,7 +590,7 @@ void cmd_trh(int argc, char** argv){
     bytes = recvfrom(datsock.sd_datagram, trh_msg, sizeof(trh_msg), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d);
     if(bytes == EWOULDBLOCK)                                                  // tempo expirou
       printf("[ERRO] Tempo expirou. Tentar novamente. \a\n");                              
-    else if(bytes < 0)                                                        // leitura falhou
+    else if(bytes <= 0)                                                       // leitura falhou
       printf("[ERRO] Receção de informação do servidor. Tentar novamente. \a\n"); 
     else
       printf("%s", trh_msg);                                                  // JMMlog manda um 'ACK', cliente mostra
@@ -660,9 +638,29 @@ void cmd_sair(int argc, char** argv){
 
 
 /*-------------------------------------------------------------------------+
+| Function: term_handler - sinais de término
++--------------------------------------------------------------------------*/
+void term_handler(int sig){
+  printf("\n[INFO] A sair... \n");                                            // avisa o cliente de que está a sair
+  close(strmsock.sd_stream);                                                  // fecha socket stream
+  unlink(datsock.my_addr_d.sun_path);                                         // faz unlink do socket
+  close(datsock.sd_datagram);                                                 // fecha socket datagram
+  printf("[INFO] Saída realizada com sucesso. להתראות!\n");                  // bye-bye
+
+  exit(0);                                                                    // termina processo do JMMapl
+}
+/*-------------------------------------------------------------------------*/
+
+
+/*-------------------------------------------------------------------------+
 | Function: cmd_rgr - listar regras do jogo
 +--------------------------------------------------------------------------*/
 void cmd_rgr(int argc, char** argv){
+  if(argc != 1){
+    printf("[ERRO] Número de argumentos inválido. Escrever 'sos' para consultar ajuda.\n");
+    return;
+  }
+
   printf("\n______________________________________REGRAS_DO_JOGO:_MASTERMIND!______________________________________ \n");
   printf("- Com o início do jogo, uma chave aleatória será gerada; \n");
   printf("- Essa chave pode ser de 3 letras de entre {ABCDE}, para a dificuldade 1; \n");

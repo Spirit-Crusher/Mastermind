@@ -21,7 +21,7 @@ const commands[] = {
   {cmd_cnj, "cnj", "<N> <n>            começar novo jogo (Nome (N) (3 chars) e nível de dificuldade (n)(1/2))"},
   {cmd_jg, "jg", "mplay               jogada (3 ou 5 letras, dependendo do nível"},
   {cmd_clm, "clm","                   consultar limites (número máximo de jogadas, tempo limite)"},
-  {cmd_mlm, "mlm","<j> <t>            mudar limites (número máximo de jogadas (j), tempo limite (t) (minutos))"},
+  {cmd_mlm, "mlm","<j> <t>            mudar limites (número máximo de jogadas (j), tempo limite (t) (segundos))"},
   {cmd_cer, "cer","                   consultar estado envio de registos para histórico"},
   {cmd_aer, "aer","                   activar envio de registos para histórico"},
   {cmd_der, "der","                   desactivar envio de registos para histórico"},
