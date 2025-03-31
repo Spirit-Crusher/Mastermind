@@ -1,34 +1,34 @@
 #include "log_server.h"
 #include <unistd.h>
 
-/***************************** global variables *******************************/
-bool STATUS_ON = true;  // variável que avisa o programa se deve terminar ou não
-pthread_mutex_t file_mux; // mutex para acesso ao ficheiro com logs de jogo
+/***************************** variáveis globais *******************************/
+// mutex para acesso ao ficheiro com logs de jogo
+pthread_mutex_t file_mux;
 
-//variáveis da gestão do ficheiro
+// variáveis da gestão do ficheiro
 int mfd;
 log_tabs_t* tabel_pt;
-//variáveis do socket
+// variáveis do socket
 int socket_d;
 
 /***************************** termination_handler *******************************/
 void termination_handler()
 {
-  //exit here or notify other processes to end
-  printf("{LOG}[INFO]-------------termination_handler: starting exit----------\n");
+  // sair aqui e notificar outros processos para terminar
+  printf("{LOG}[INFO]-------------termination_handler: a iniciar saída----------\n");
 
-  pthread_mutex_lock(&file_mux);  //entra na zona critical (só fechar se ninguém estiver a usar)
+  pthread_mutex_lock(&file_mux);  // entra na zona crítica (só fechar se ninguém estiver a usar)
   // fechar ficheiro de dados
   munmap(tabel_pt, MSIZE);
   close(mfd);
   printf("{LOG}[INFO]termination_handler: Ficheiro de dados Fechado\n");
 
-  //fechar socket
+  // fechar socket
   close(socket_d);
   unlink(JMMLOGSD);
   printf("{LOG}[INFO]termination_handler: Terminámos o socket datagram\n");
 
-  //fechar queue
+  // fechar queue
   if (mq_unlink(JMMLOGQ) < 0) {
     perror("{LOG}[ERROR]termination_handler: Erro a eliminar queue");
   }
@@ -37,7 +37,6 @@ void termination_handler()
   exit(0);
   return;
 }
-
 
 /******************************************************************/
 /***************************** main *******************************/
@@ -53,17 +52,17 @@ int main()
   coms_t msg_recieved;
 
   // variáveis de comunicação com JMMapl
-  char buffer_send[100]; //buffer para mensagem de resposta
-  log_single_tab_t msg_tab_send; //tabelas de jogo a enviar para JMMapl
+  char buffer_send[100]; // buffer para mensagem de resposta
+  log_single_tab_t msg_tab_send; // tabelas de jogo a enviar para JMMapl
 
   printf("{LOG}[INFO]A começar JMMlog (PID=%d)\n", getpid());
 
-  // definir termination signal handler 
+  // definir handler para sinal de terminação 
   if (signal(SIGTERM, termination_handler) == SIG_ERR) {
-    perror("{LOG}[ERROR]error setting SIGTERM signal\n");
+    perror("{LOG}[ERROR]erro ao definir sinal SIGTERM\n");
   }
   if (signal(SIGINT, termination_handler) == SIG_ERR) {
-    perror("{LOG}[ERROR]error setting SIGTERM signal\n");
+    perror("{LOG}[ERROR]erro ao definir sinal SIGTERM\n");
   }
 
   if (pthread_mutex_init(&file_mux, NULL) != 0) {
@@ -71,18 +70,16 @@ int main()
     return -1;
   }
 
-
-  // abrir ficheiro com mmap e mapiá-lo a uma variável
+  // abrir ficheiro com mmap e mapeá-lo a uma variável
   open_file(&mfd, &tabel_pt);
 
-  //* começar thread_queue_handler -- comunicação com JMMserv
+  // começar thread_queue_handler -- comunicação com JMMserv
   printf("{LOG}[INFO]main: criar thread Queue Handler\n");
   if (pthread_create(&thread_queue_handler, NULL, queue_handler, NULL) != 0) {
     printf("{LOG}[INFO]Erro a criar thread=Queue Handler\n");
   }
 
-
-  //* começar ligação socket datagrama -- comunicação com JMMapl
+  // começar ligação socket datagrama -- comunicação com JMMapl
   if ((socket_d = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0)
   {
     perror("{LOG}[ERROR]Erro a criar socket");
@@ -99,9 +96,9 @@ int main()
     exit(-1);
   }
 
-  while (STATUS_ON) { // receber datagramas e enviar respostas
+  while (true) { // receber datagramas e enviar respostas
     fromlen = sizeof(from);
-    if (recvfrom(socket_d, &msg_recieved, sizeof(msg_recieved), 0, (struct sockaddr*)&from, &fromlen) < 0)    perror("{LOG}[ERROR]Erro no recvfrom");
+    if (recvfrom(socket_d, &msg_recieved, sizeof(msg_recieved), 0, (struct sockaddr*)&from, &fromlen) <= 0)    perror("{LOG}[ERROR]Erro no recvfrom");
     else {
       printf("{LOG}[INFO]SERV: Recebi: cmd=%i n=%d Path: %s\n", msg_recieved.command, msg_recieved.arg1.n, from.sun_path);
 
@@ -109,7 +106,7 @@ int main()
       if (msg_recieved.command == LTC) {
         printf("{LOG}[INFO]listar tabela(s) classificação nível n=%i\n", msg_recieved.arg1.n);
 
-        pthread_mutex_lock(&file_mux);  //entra na zona critical
+        pthread_mutex_lock(&file_mux);  // entra na zona crítica
         switch (msg_recieved.arg1.n) {
         case DIFF_ALL:
           get_tab_n(&msg_tab_send, DIFF_1);
@@ -126,20 +123,20 @@ int main()
           if (sendto(socket_d, &msg_tab_send, sizeof(log_single_tab_t), 0, (struct sockaddr*)&from, fromlen) < 0) perror("{LOG}[ERROR]Erro no sendto\n");
           break;
         default:
-          printf("{LOG}[INFO]main: difficuldade inválida\n");
+          printf("{LOG}[INFO]main: dificuldade inválida\n");
           break;
         }
-        pthread_mutex_unlock(&file_mux);  //sair da zona crítica
+        pthread_mutex_unlock(&file_mux);  // sair da zona crítica
       }
       //************** - rtc: reinicializar tabela(s) classificação nível n (0-todos)
       else if (msg_recieved.command == RTC) {
         printf("{LOG}[INFO]reinicializar tabela(s) classificação nível n=%i\n", msg_recieved.arg1.n);
-        pthread_mutex_lock(&file_mux);  //entra na zona critical
+        pthread_mutex_lock(&file_mux);  // entra na zona crítica
         del_tab_n(msg_recieved.arg1.n);
-        pthread_mutex_unlock(&file_mux);  //sair da zona crítica
+        pthread_mutex_unlock(&file_mux);  // sair da zona crítica
         sprintf(buffer_send, "[INFO]tabela(s) reinicializada(s) com sucesso\n");
         if (sendto(socket_d, buffer_send, strlen(buffer_send) + 1, 0, (struct sockaddr*)&from, fromlen) < 0) perror("{LOG}[ERROR]Erro no sendto\n");
-        }
+      }
 
       //************** - trh: terminar processo de registo histórico (JMMlog)
       else if (msg_recieved.command == TRH) {
@@ -159,9 +156,9 @@ int main()
     }
   }
 
-  pthread_join(thread_queue_handler, NULL); // se a main terminar, o processo termina, e todos as threads associadas também
+  pthread_join(thread_queue_handler, NULL); // se a main terminar, o processo termina, e todas as threads associadas também
 
-  printf("{LOG}JMMlog todas as threads terminadas - Clena Exit\n");
+  printf("{LOG}JMMlog todas as threads terminadas - Saída Limpa\n");
   return 0;
 }
 
@@ -170,11 +167,10 @@ int main()
 void* queue_handler() {
   printf("{LOG}queue_handler: começar thread\n");
 
-  //variáveis queue
+  // variáveis queue
   int mqids;
   struct mq_attr ma;
 
-  //struct timespec tm;
   rjg_t game_save;
 
   // abrir queue
@@ -189,22 +185,20 @@ void* queue_handler() {
   printf("{LOG}queue_handler: acabei de abrir queue\n");
 
   // receber mensagens da queue e processá-las
-  while (STATUS_ON) {
+  while (true) {
     // receber game log
     printf("{LOG}\nqueue_handler: pronto receber game log\n");
     if (mq_receive(mqids, (char*)&game_save, sizeof(game_save), NULL) < 0) {
       perror("{LOG}[ERROR]queue_handler: erro a receber mensagem ou timeout");
     }
 
-    pthread_mutex_lock(&file_mux);  //entering critical secttion
+    pthread_mutex_lock(&file_mux);  // entrar na zona crítica
     // guardar o jogo na memória
     printf("{LOG}queue_handler: guardar o jogo na memória\n");
     insert_sorted_n(tabel_pt, game_save, game_save.nd);
     printf("{LOG}queue_handler: acabei de guardar jogo na memória\n");
-    pthread_mutex_unlock(&file_mux);  //exiting critical secttion
+    pthread_mutex_unlock(&file_mux);  //sair da zona crítica
   }
-
-  // clean exit process
   if (mq_unlink(JMMLOGQ) < 0) {
     perror("{LOG}[ERROR]queue_handler: Erro a eliminar queue");
   }
@@ -212,10 +206,8 @@ void* queue_handler() {
   return NULL;
 }
 
-
-
 /***************************** open_file *******************************/
-//void open_file(int* mfd_p, log_tabs_t** tabel_p) {
+// void open_file(int* mfd_p, log_tabs_t** tabel_p) {
 void open_file() {
   /* abrir / criar ficheiro */
   if ((mfd = open(JMMLOG, O_RDWR | O_CREAT, 0666)) < 0) {
@@ -284,7 +276,6 @@ void insert_sorted_n(log_tabs_t* log, rjg_t new_game, game_diff_t diff) {
   (*n_games)++;
 }
 
-
 /***************************** get_tab_n *******************************/
 void get_tab_n(log_single_tab_t* single_tab, int diff) {
 
@@ -307,11 +298,10 @@ void get_tab_n(log_single_tab_t* single_tab, int diff) {
     break;
 
   default:
-    printf("{LOG}get_tab_n: difficuldade inválida (nota: nesta função DIF_ALL não é suportado)\n");
+    printf("{LOG}get_tab_n: dificuldade inválida (nota: nesta função DIF_ALL não é suportado)\n");
     break;
   }
 }
-
 
 /***************************** del_tab_n *******************************/
 void del_tab_n(int diff) {
@@ -329,7 +319,7 @@ void del_tab_n(int diff) {
     break;
 
   default:
-    printf("{LOG}[INFO]del_tab_n: difficuldade inválida\n");
+    printf("{LOG}[INFO]del_tab_n: dificuldade inválida\n");
     break;
   }
 }

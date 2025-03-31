@@ -28,8 +28,8 @@ run_s:
 run_l:
 	cd ./log_server && make && ./JMMlog
 
-# run client
-run_c:
+# run aplication
+run_a:
 	cd ./client && make && ./JMMapl
 
 ################################## CLEAN ##################################
