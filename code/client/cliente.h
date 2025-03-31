@@ -1,16 +1,19 @@
 /*---------------------------------includes--------------------------------*/
 #include "../mastermind.h"
+/*------------------------------------------------------------------------*/
 
 /*---------------------------------defines--------------------------------*/
 #define ARGVECSIZE 3
 #define DSENDPLAY  6
-#define DRCVPLAY   30
-#define MAX_LINE   50
+#define MAX_LINE   15
+#define DRCVPLAY   70
+#define MAX_RCV_SIZE 60
 #define CLINAME    "/tmp/CLI"
 #define NCOMMANDS  (sizeof(commands)/sizeof(struct command_d))
+/*------------------------------------------------------------------------*/
 
 
-/*---------------------------variávies_globais----------------------------*/
+/*-------------------------------variávies--------------------------------*/
 typedef struct {
   int sd_datagram;                  // file descriptor do socket datagrama
   socklen_t tolen_d;
@@ -24,10 +27,13 @@ typedef struct {
   socklen_t addrlen_s;
   struct sockaddr_un srv_addr_s; 
 } STREAM;
+/*------------------------------------------------------------------------*/
 
 
 /*---------------------------protótipos_de_funções------------------------*/
+// funções para a "linha de comandos"
 void cmd_sos  (int, char**);
+void cmd_rgr  (int, char**);
 void cmd_sair (int, char**);
 void cmd_test (int, char**);
 void cmd_cnj  (int, char**);
@@ -42,5 +48,6 @@ void cmd_ltc  (int, char**);
 void cmd_rtc  (int, char**);
 void cmd_trh  (int, char**);
 
-void print_rjg(const rjg_t* game);
+// outras
 void print_log_tabs(log_single_tab_t * log_tab);
+/*------------------------------------------------------------------------*/

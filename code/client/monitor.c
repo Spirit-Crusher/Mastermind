@@ -6,7 +6,7 @@
 const char TitleMsg[] = "\n Application Control Monitor\n";
 const char InvalMsg[] = "\n Invalid command!";
 
-struct 	command_d {
+struct command_d {
   void  (*cmd_fnct)(int, char**);
   char*	cmd_name;
   char*	cmd_help;
@@ -15,6 +15,7 @@ struct 	command_d {
 const commands[] = {
   {cmd_sos,  "sos","                       "},
   {cmd_sos,  "help","                      "},
+  {cmd_rgr,  "rules","                 listar as regras do jogo"},
   {cmd_sair, "sair","                  sair da aplicação de jogo"},
   {cmd_test, "teste","<arg1> <arg2>    comando de teste"},
   {cmd_cnj, "cnj", "<N> <n>            começar novo jogo (Nome (N) (3 chars) e nível de dificuldade (n)(1/2))"},
@@ -36,7 +37,7 @@ const commands[] = {
 | Function: cmd_sos - provides a rudimentary help
 +--------------------------------------------------------------------------*/ 
 void cmd_sos (int argc, char **argv){
-  int i;
+  unsigned long int i;
 
   printf("%s\n", TitleMsg);
   for(i = 0; i < NCOMMANDS; i++)
@@ -47,23 +48,41 @@ void cmd_sos (int argc, char **argv){
 /*-------------------------------------------------------------------------+
 | Function: my_getline        (called from monitor) 
 +--------------------------------------------------------------------------*/ 
-int my_getline (char** argv, int argvsize){
-  static char line[MAX_LINE];
+int my_getline(char** argv, int argvsize){
   char *p;
   int argc;
+  static char line[MAX_LINE];
 
   fgets(line, MAX_LINE, stdin);
 
   /* Break command line into an o.s. like argument vector,
      i.e. compliant with the (int argc, char **argv) specification --------*/
 
-  for (argc = 0,p=line; (*line != '\0') && (argc < argvsize); p = NULL,argc++) {
+  for(argc = 0,p=line; (*line != '\0') && (argc < argvsize); p = NULL,argc++){
     p = strtok(p, " \t\n");
     argv[argc] = p;
-    if (p == NULL) return argc;
+    if(p == NULL) return argc;
   }
   argv[argc] = p;
+
   return argc;
+}
+
+
+/*-------------------------------------------------------------------------+
+| Function: entrance    
++--------------------------------------------------------------------------*/
+void entrance(){
+  printf("-----------------------------WELCOME TO:---------------------------------      \n");
+  printf("\n");
+  printf(" __  __           _____ _______ ______ _____  __  __ _____ _   _ _____         \n");
+  printf(" __  __           _____ _______ ______ _____  __  __ _____ _   _ _____         \n");  
+  printf("|  \\/  |   /\\    / ____|__   __|  ____|  __ \\|  \\/  |_   _| \\ | |  __ \\  \n");
+  printf("| \\  / |  /  \\  | (___    | |  | |__  | |__) | \\  / | | | |  \\| | |  | |   \n");                                                                  
+  printf("| |\\/| | / /\\ \\  \\___ \\   | |  |  __| |  _  /| |\\/| | | | | . ` | |  | | \n");
+  printf("| |  | |/ ____ \\ ____) |  | |  | |____| | \\ \\| |  | |_| |_| |\\  | |__| |   \n");                                                                    
+  printf("|_|  |_/_/    \\_\\_____/   |_|  |______|_|  \\_\\_|  |_|_____|_| \\_|_____/   \n");
+  printf("\n");  
 }
 
 
@@ -71,27 +90,27 @@ int my_getline (char** argv, int argvsize){
 | Function: create_sock     após início da execução, criar socket datagrama
 +--------------------------------------------------------------------------*/ 
 DATAGRAM create_sock(void){
-  DATAGRAM datsock;
-  char mypid[6];
+  char mypid[6];                                                              // variável "auxiliar"
+  DATAGRAM datsock;                                                           // variável a retornar
 
-  if((datsock.sd_datagram = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0 ){     // tenta criar um socket datagrama
+  if((datsock.sd_datagram = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0 ){            // tenta criar um socket datagrama
     perror("[ERRO] Criação de socket datagrama falhou. Tentar Novamente. \n");
-    exit(-1);     // volta para a "linha de comandos"
+    exit(-1);                                                                 // termina o JMMapl
   }
     
   datsock.my_addr_d.sun_family = AF_UNIX;
   memset(datsock.my_addr_d.sun_path, 0, sizeof(datsock.my_addr_d.sun_path));
   strcpy(datsock.my_addr_d.sun_path, CLINAME);
   sprintf(mypid, "%d", getpid());
-  strcat(datsock.my_addr_d.sun_path, mypid);      // junta o path dos clientes com o pid criando um identificador único
+  strcat(datsock.my_addr_d.sun_path, mypid);                                  // junta o path dos clientes com o pid criando um identificador único
   datsock.addrlen_d = sizeof(datsock.my_addr_d.sun_family) + strlen(datsock.my_addr_d.sun_path);
   
   if(bind(datsock.sd_datagram, (struct sockaddr *)&datsock.my_addr_d, datsock.addrlen_d) < 0 ){
     perror("[ERRO] Bind do socket datagrama. Tentar novamente. \n");
-    exit(-1);     // volta para a "linha de comandos"
+    exit(-1);                                                                 // termina o JMMapl
   }
 
-  printf("[INFO] Socket datagrama criado. Comunicações com o histórico ativas.\n");
+  printf("[INFO] Socket datagrama criado. Comunicações com o histórico ativadas. \n");
 
   return datsock;
 }
@@ -101,8 +120,9 @@ DATAGRAM create_sock(void){
 | Function: monitor        (called from main) 
 +--------------------------------------------------------------------------*/ 
 void monitor(){
+  int argc;
+  unsigned long int i;
   static char *argv[ARGVECSIZE + 1], *p;
-  int argc, i;
 
   printf("%s Type sos for help\n", TitleMsg);
   for(;;){

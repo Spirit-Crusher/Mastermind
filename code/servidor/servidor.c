@@ -195,7 +195,6 @@ void stream_handler(int socket, game_t* game, coms_t buffer_stream)
 void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_addrlen, coms_t buffer_dgram)
 {
     char buffer_send[100]; //buffer para mensagem de resposta
-
     switch (buffer_dgram.command)
     {
         case CLM:
