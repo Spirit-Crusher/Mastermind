@@ -213,7 +213,7 @@ void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_a
             global_game_rules.maxt = buffer_dgram.arg2.t;
             pthread_mutex_unlock(&rules_mutex);
 
-            printf("{SERVER} [AVISO] Regras globais alteradas: jmax=%d tmax=%d\n", global_game_rules.maxj, global_game_rules.maxt);
+            printf("{SERVER} [AVISO] Regras globais alteradas: jmax=%d tmax=%d sec\n", global_game_rules.maxj, global_game_rules.maxt);
 
             sprintf(buffer_send, "[INFO] Regras alteradas com sucesso.\n");
             if (sendto(sd, buffer_send, strlen(buffer_send)+1, 0, (struct sockaddr*)&client_addr, client_addrlen) < 0)
