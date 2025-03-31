@@ -351,7 +351,7 @@ void* thread_func_gameinstance(void* game_info)
                 current_game->game_state = DISCONNECT;
                 break;
             }
-            else if (errno == EWOULDBLOCK)
+            else if ((bytes <=0) && (errno == EWOULDBLOCK))
             {
                 //vamos tentar ler novamente
                 current_game->game_state = DISCONNECT;
