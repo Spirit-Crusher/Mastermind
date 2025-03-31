@@ -128,7 +128,7 @@ void cmd_jg(int argc, char** argv){
       }
 
       if(!(strmsock.sd_stream > 0)){                                          // socket permanece aberto
-        printf("[ERRO]  Jogo não inicializado. Tempo pode ter terminado... Tentar novamente. \n"); 
+        printf("[ERRO] Jogo não inicializado. Tempo pode ter terminado... Tentar novamente. \n"); 
         return;
       }
 
@@ -147,14 +147,14 @@ void cmd_jg(int argc, char** argv){
 
     cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);               // jogada a enviar ao JMMserv
 
-    if((write(strmsock.sd_stream, &cmd_msg, sizeof(cmd_msg)) < 0)){         // tentar enviar
+    if((write(strmsock.sd_stream, &cmd_msg, sizeof(cmd_msg)) <= 0)){         // tentar enviar
       perror("[ERRO] Envio para o servidor. Tentar novamente. \a\n");
       return;
     }else{                                                                  // enviou
       bytes = read(strmsock.sd_stream, rcv_play, sizeof(rcv_play));         // adicionar timeout aqui algures
-      if(bytes == EWOULDBLOCK){                                             // tempo expirou
+      if((bytes <= 0) && (errno == EWOULDBLOCK)){                                             // tempo expirou
         printf("[ERRO] Tempo expirou. Tentar novamente. \a\n");
-      }else if(bytes <= 0){                                                 // leitura falhou
+      }else if(bytes == 0){                                                 // leitura falhou
         printf("[ERRO] Receção de informação do servidor. Tentar novamente. \a\n");
       }else{
         if(strcmp(rcv_play, GAME_WON) != 0){                                // verifica se o jogador venceu ou não
