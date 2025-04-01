@@ -3,13 +3,13 @@
 /*------------------------------------------------------------------------*/
 
 /*---------------------------------defines--------------------------------*/
-#define ARGVECSIZE 3
-#define DSENDPLAY  6
-#define MAX_LINE   15
-#define DRCVPLAY   70
+#define ARGVECSIZE   3
+#define DSENDPLAY    6
+#define MAX_LINE     15
+#define DRCVPLAY     70
 #define MAX_RCV_SIZE 60
-#define CLINAME    "/tmp/CLI"
-#define NCOMMANDS  (sizeof(commands)/sizeof(struct command_d))
+#define CLINAME      "/tmp/CLI"
+#define NCOMMANDS    (sizeof(commands)/sizeof(struct command_d))
 /*------------------------------------------------------------------------*/
 
 

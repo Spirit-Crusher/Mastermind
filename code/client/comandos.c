@@ -33,7 +33,7 @@ void cmd_cnj(int argc, char** argv){
     dif = atoi(argv[2]);
     if((dif == 1) || (dif == 2)){
       if((strmsock.sd_stream = socket(AF_UNIX, SOCK_STREAM, 0)) < 0){         // tenta criar socket stream
-        perror("[ERRO] Criação de socket stream. Tentar novamente. \a\n");
+        perror("[ERRO] Criação de socket stream. Tentar novamente. \a");
         return;                                                               // volta para a "linha de comandos"
       }
 
@@ -43,21 +43,21 @@ void cmd_cnj(int argc, char** argv){
       strmsock.addrlen_s = sizeof(strmsock.srv_addr_s.sun_family) + strlen(strmsock.srv_addr_s.sun_path);
 
       if(connect(strmsock.sd_stream, (struct sockaddr*)&strmsock.srv_addr_s, strmsock.addrlen_s) < 0){
-        perror("[ERRO] Connect. Tentar novamente. \a\n");
+        perror("[ERRO] Connect. Tentar novamente. \a");
         return;                                                               // volta para a "linha de comandos"
       }
 
       coms_msg.command = CNJ; coms_msg.arg2.n = atoi(argv[2]);                // comando para o JMMserv
       strcpy(coms_msg.arg1.name, argv[1]);                                    // definir nome do jogador
 
-      struct timeval timeout;                                                 // estrutura para definir timeout
+      struct timeval timeout;                                                 // estrutura para definir timeout (read)
       timeout.tv_sec = 3;                                                     // definir tempo timeout: 3seg
       timeout.tv_usec = 0;                                                    // definir tempo timeout: 0useg
       
       setsockopt(strmsock.sd_stream, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));     // definir timeout
 
       if((write(strmsock.sd_stream, &coms_msg, sizeof(coms_msg)) < 0)){       // faz write (envio) para o JMMserv
-        perror("[ERRO] Write para o servidor. Tentar novamente. \a\n");       // erro se falhar
+        perror("[ERRO] Write para o servidor. Tentar novamente. \a");         // erro se falhar
         close(strmsock.sd_stream);                                            // fecha o socket, criar novo jogada again
         return;                                                               // volta para a "linha de comandos"
       }else{                                                                  // enviou
@@ -146,23 +146,23 @@ void cmd_jg(int argc, char** argv){
       return;
     }
 
-    cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);               // jogada a enviar ao JMMserv
+    cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);                 // jogada a enviar ao JMMserv
 
-    if((write(strmsock.sd_stream, &cmd_msg, sizeof(cmd_msg)) <= 0)){         // tentar enviar
-      perror("[ERRO] Envio para o servidor. Tentar novamente. \a\n");
+    if((write(strmsock.sd_stream, &cmd_msg, sizeof(cmd_msg)) <= 0)){          // tentar enviar
+      perror("[ERRO] Envio para o servidor. Tentar novamente. \a");
       return;
-    }else{                                                                  // enviou
-      bytes = read(strmsock.sd_stream, rcv_play, sizeof(rcv_play));         // adicionar timeout aqui algures
-      if((bytes <= 0) && (errno == EWOULDBLOCK)){                           // tempo expirou
+    }else{                                                                    // enviou
+      bytes = read(strmsock.sd_stream, rcv_play, sizeof(rcv_play));           // adicionar timeout aqui algures
+      if((bytes <= 0) && (errno == EWOULDBLOCK)){                             // tempo expirou
         printf("[ERRO] Tempo expirou. Tentar novamente. \a\n");
-      }else if(bytes <= 0 && errno != EWOULDBLOCK){                         // leitura falhou
+      }else if(bytes <= 0 && errno != EWOULDBLOCK){                           // leitura falhou
         printf("[ERRO] Receção de informação do servidor. Tentar novamente. \a\n");
       }else{
-        if(strcmp(rcv_play, GAME_WON) != 0){                                // verifica se o jogador venceu ou não
-          printf("%s", rcv_play);                                           // jogada
+        if(strcmp(rcv_play, GAME_WON) != 0){                                  // verifica se o jogador venceu ou não
+          printf("%s", rcv_play);                                             // jogada
         }else{
-          printf("[INFO] Parabéns: %s \n", rcv_play);                       // jogador vence
-          close(strmsock.sd_stream);                                        // fecha o seu socket
+          printf("[INFO] Parabéns: %s \n", rcv_play);                         // jogador vence
+          close(strmsock.sd_stream);                                          // fecha o seu socket
           printf("[INFO] Jogador desconectado do seu socket stream. 'cnj' para criar novo jogo. \n");
         }
       }
@@ -463,7 +463,7 @@ void cmd_ltc(int argc, char** argv) {
     setsockopt(datsock.sd_datagram, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
     if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0){
-      perror("[ERRO] Envio de pedido para o servidor. Tentar novamente. \a\n");
+      perror("[ERRO] Envio de pedido para o servidor. Tentar novamente. \a");
     }else{
       switch(cmd_msg.arg1.n){                                                 // dificuldades
         case DIFF_ALL:                                                        // tabelas dificulades 1 e 2
@@ -501,7 +501,7 @@ void cmd_ltc(int argc, char** argv) {
           if(bytes2 == EWOULDBLOCK)                                           // tempo expirou
             printf("[ERRO] Tempo expirou. Tentar novamente. \a\n");
           else if(bytes2 <= 0 && errno != EWOULDBLOCK)                        // leitura falhou
-            perror("[ERRO] Receção de dados do servidor. Tentar novamente. \a\n");
+            perror("[ERRO] Receção de dados do servidor. Tentar novamente. \a");
           else
             print_log_tabs(&msg_tab_recieved2);                               // mostra mensagem do JMMlog
           break;
@@ -543,7 +543,7 @@ void cmd_rtc(int argc, char** argv){
     setsockopt(datsock.sd_datagram, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
     if(sendto(datsock.sd_datagram, &cmd_msg, sizeof(cmd_msg), 0, (struct sockaddr*)&datsock.to_d, datsock.tolen_d) < 0){
-      perror("[ERRO] Envio de pedido para o servidor. Tentar novamente. \a\n");
+      perror("[ERRO] Envio de pedido para o servidor. Tentar novamente. \a");
     }else{                                                                    // envio bem-sucedido
       bytes = recvfrom(datsock.sd_datagram, rtc_msg, sizeof(rtc_msg), 0, (struct sockaddr*)&datsock.to_d, &datsock.tolen_d);
       if(bytes == EWOULDBLOCK)                                                // tempo expirou

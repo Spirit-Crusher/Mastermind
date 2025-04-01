@@ -40,7 +40,7 @@ void cmd_sos (int argc, char **argv){
   unsigned long int i;
 
   printf("%s\n", TitleMsg);
-  for(i = 0; i < NCOMMANDS; i++)
+  for(i = 0; i < NCOMMANDS; i++)                                              // mostra todos os comandos e a sua descrição
     printf("%s %s\n", commands[i].cmd_name, commands[i].cmd_help);
 }
 
@@ -127,6 +127,7 @@ void monitor(){
   printf("%s Type sos for help\n", TitleMsg);
   for(;;){
     printf("\nCmd> ");
+    
     /* Reading and parsing command line  ----------------------------------*/
     if((argc = my_getline(argv, ARGVECSIZE)) > 0){
       for(p = argv[0]; *p != '\0'; *p = tolower(*p), p++);
