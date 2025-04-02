@@ -51,3 +51,6 @@ void cmd_trh  (int, char**);
 // outras
 void print_log_tabs(log_single_tab_t * log_tab);
 /*------------------------------------------------------------------------*/
+
+
+// fonte: como remover unused variables:      https://cs61.seas.harvard.edu/site/2019/Patterns/

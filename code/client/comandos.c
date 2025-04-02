@@ -149,7 +149,7 @@ void cmd_jg(int argc, char** argv){
     cmd_msg.command = JG; strcpy(cmd_msg.arg1.move, argv[1]);                 // jogada a enviar ao JMMserv
 
     if((write(strmsock.sd_stream, &cmd_msg, sizeof(cmd_msg)) <= 0)){          // tentar enviar
-      perror("[ERRO] Envio para o servidor. Tentar novamente. \a");
+      perror("[ERRO] Envio para o servidor. Timeout pode ter ocorrido, reiniciar jogo. \a");
       return;
     }else{                                                                    // enviou
       bytes = read(strmsock.sd_stream, rcv_play, sizeof(rcv_play));           // adicionar timeout aqui algures
@@ -181,6 +181,8 @@ void cmd_clm(int argc, char** argv){
   coms_t cmd_msg;                                                             // comandos a enviar 
   short int bytes;                                                            // variável auxiliar para timeouts
   char requested_info[MAX_RCV_SIZE];                                          // mensagem a receber
+  
+  (void) *argv;                                                               // remover aviso de unused variable na compilação
   
   if(argc != 1){                                                              // validar #argumentos
     printf("[ERRO] Número de argumentos inválido. Escrever 'sos' para consultar ajuda. \n");
@@ -271,6 +273,8 @@ void cmd_cer(int argc, char** argv){
   coms_t cmd_msg;                                                             // comandos a enviar 
   short int bytes;                                                            // variável auxiliar para timeouts
 
+  (void) *argv;                                                               // remover aviso de unused variable na compilação
+
   if(argc != 1){                                                              // #argumentos inválidos
     printf("[ERRO] Número de argumentos inválido. Escrever 'sos' para consultar ajuda.\n");
     return;
@@ -313,6 +317,8 @@ void cmd_aer(int argc, char** argv){
   coms_t cmd_msg;                                                             // comandos a enviar   
   short int bytes;                                                            // variável auxiliar para timeouts
   char aer_msg[MAX_RCV_SIZE];                                                 // mensagem a receber
+
+  (void) *argv;                                                               // remover aviso de unused variable na compilação
 
   if(argc != 1){                                                              // #argumentos inválido
     printf("[ERRO] Número de argumentos inválido. Escrever 'sos' para consultar ajuda.\n");
@@ -357,6 +363,8 @@ void cmd_der(int argc, char** argv){
   char der_msg[MAX_RCV_SIZE];                                                 // mensagem a receber
   short int bytes;                                                            // variável auxiliar para timeouts
 
+  (void) *argv;                                                               // remover aviso de unused variable na compilação
+
   if(argc != 1){                                                              // #argumentos inválido
     printf("[ERRO] Número de argumentos inválido. Escrever 'sos' para consultar ajuda.\n");
     return;
@@ -399,6 +407,8 @@ void cmd_tmm(int argc, char** argv){
   char tmm_msg[MAX_RCV_SIZE];                                                 // mensagem a receber
   coms_t cmd_msg = { .command = TMM };                                        // comando para o JMMserv
   short int bytes;                                                            // variável auxiliar para timeouts
+
+  (void) *argv;                                                               // remover aviso de unused variable na compilação
 
   if(argc != 1){                                                              // #argumentos inválido
     printf("[ERRO] Número de argumentos inválido. Escrever 'sos' para consultar ajuda.\n");
@@ -568,6 +578,8 @@ void cmd_trh(int argc, char** argv){
   coms_t cmd_msg = { .command = TRH};                                         // comando para o JMMlog
   short int bytes;                                                            // variável auxiliar para timeouts
 
+  (void) *argv;                                                               // remover aviso de unused variable na compilação
+
   if(argc != 1){                                                              // #argumentos inválido
     printf("[ERRO] Número de argumentos inválido. Escrever 'sos' para consultar ajuda.\n");
     return;
@@ -627,6 +639,9 @@ void print_log_tabs(log_single_tab_t* log_tab){
 | Function: cmd_sair - termina a aplicacao
 +--------------------------------------------------------------------------*/
 void cmd_sair(int argc, char** argv){
+  (void) argc;                                                                // remover aviso de unused variable na compilação
+  (void) *argv;                                                               // remover aviso de unused variable na compilação
+
   printf("\n[INFO] A sair... \n");                                            // avisa o cliente de que está a sair
   close(strmsock.sd_stream);                                                  // fecha socket stream
   unlink(datsock.my_addr_d.sun_path);                                         // faz unlink do socket
@@ -642,11 +657,13 @@ void cmd_sair(int argc, char** argv){
 | Function: term_handler - sinais de término
 +--------------------------------------------------------------------------*/
 void term_handler(int sig){
+  (void) sig;                                                                 // remover aviso de unused variable na compilação
+
   printf("\n[INFO] A sair... \n");                                            // avisa o cliente de que está a sair
   close(strmsock.sd_stream);                                                  // fecha socket stream
   unlink(datsock.my_addr_d.sun_path);                                         // faz unlink do socket
   close(datsock.sd_datagram);                                                 // fecha socket datagram
-  printf("[INFO] Saída realizada com sucesso. להתראות!\n");                  // bye-bye
+  printf("[INFO] Saída realizada com sucesso. להתראות!\n");                   // bye-bye
 
   exit(0);                                                                    // termina processo do JMMapl
 }
@@ -657,6 +674,8 @@ void term_handler(int sig){
 | Function: cmd_rgr - listar regras do jogo
 +--------------------------------------------------------------------------*/
 void cmd_rgr(int argc, char** argv){
+  (void) *argv;                                                               // remover aviso de unused variable na compilação
+
   if(argc != 1){
     printf("[ERRO] Número de argumentos inválido. Escrever 'sos' para consultar ajuda.\n");
     return;

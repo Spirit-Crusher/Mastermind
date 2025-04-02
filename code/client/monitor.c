@@ -38,6 +38,13 @@ const commands[] = {
 +--------------------------------------------------------------------------*/ 
 void cmd_sos (int argc, char **argv){
   unsigned long int i;
+  
+  (void) *argv;                                                               // remover aviso de unused variable na compilação
+
+  if(argc != 1){                                                              // validar número de argumentos
+    printf("[ERRO] Número de argumentos inválido. Escrever  apenas 'sos' ou 'help' para consultar ajuda.\n");
+    return;
+  }
 
   printf("%s\n", TitleMsg);
   for(i = 0; i < NCOMMANDS; i++)                                              // mostra todos os comandos e a sua descrição
