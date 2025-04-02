@@ -11,6 +11,7 @@ char log_server[] = "pwd & ../log_server/JMMlog &"; //caminho relativo para log_
 int sd_datagram; //socket descriptor do servidor para datagrama
 int sd_stream; //socket descriptor do servidor para stream
 pthread_mutex_t rules_mutex; //mutex para impedir que regras sejam alteradas enquanto está a ser criado novo jogo
+pthread_mutex_t save_mutex; //mutex para impedir que 2 threads tentem inicializar log_server simultâneamente
 
 
 /*####################################################### exit_handler ######################################################*/
@@ -280,6 +281,7 @@ void save_game(rjg_t log)
     int mqids;
 
     //tentar abrir queue
+    pthread_mutex_lock(&save_mutex);
     if ((mqids = mq_open(JMMLOGQ, O_RDWR)) < 0) 
     {
         perror("{SERVER} [ERRO] Erro a associar a queue servidor\n\a");
@@ -296,6 +298,7 @@ void save_game(rjg_t log)
         }
 
     }
+    pthread_mutex_unlock(&save_mutex);
 
     //enviar registo ao log_server
     printf("{SERVER} [INFO] A enviar jogo ao log_server, MQIDS:%d\n", mqids);
@@ -558,10 +561,14 @@ int main()
     //definir seed
     srand(time(NULL));
 
-    //iniciar mutex
+    //iniciar mutexes
     if (pthread_mutex_init(&rules_mutex, NULL) != 0)
     {
-        printf("{SERVER} [ERRO] Erro a inicializar mutex\n");
+        printf("{SERVER} [ERRO] Erro a inicializar rules_mutex\n");
+    }
+    if (pthread_mutex_init(&save_mutex, NULL) != 0)
+    {
+        printf("{SERVER} [ERRO] Erro a inicializar save_mutex\n");
     }
     
     //iniciar thread aceita jogos
