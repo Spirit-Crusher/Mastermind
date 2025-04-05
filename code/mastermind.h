@@ -42,14 +42,14 @@
 #define GAME_DISCONNECT "{SERVER} [ERRO] GAME DISCONNECTED"
 
 /****************** Enums *******************/
-typedef enum
+typedef enum  //nível de dificuldade
 {
   DIFF_ALL,
   DIFF_1,
   DIFF_2,
 } game_diff_t;
 
-typedef enum
+typedef enum  //possíveis estados de jogo
 {
   ONGOING,
   PLAYER_WIN,
@@ -58,7 +58,7 @@ typedef enum
   DISCONNECT,
 } game_state_t;
 
-typedef enum
+typedef enum  //comandos disponíveis
 {
   CNJ,
   JG,
@@ -75,7 +75,7 @@ typedef enum
 
 /****************** Structs *******************/
 typedef struct
-{               /* estrutura de um registo de jogo */
+{             /* estrutura de um registo de jogo */
   int nd;     /* nível de dificuldade do jogo */
   char nj[4]; /* nome do jogador (3 caracteres) */
   int nt;     /* número de tentativas usadas */
@@ -95,23 +95,20 @@ typedef struct // variável que guarda o jogo
 {
   char correct_sequence[MAX_SEQUENCE_SIZE]; // sequência correta definida no início do jogo
   rjg_t log;                                // log do jogo para ser enviado depois ser armazenado
-  unsigned short int n_char;          // número de caracteres na sequência
+  unsigned short int n_char;                // número de caracteres na sequência
   char player_move[MAX_SEQUENCE_SIZE];      // sequência enviada pelo utilizador
   unsigned short int np;                    // número de letras certas no sítio certo
   unsigned short int nb;                    // número de letras certas no sítio errado<
-  game_state_t game_state; // estado do jogo = {ONGOING,PLAYER_WIN,PLAYER_LOST}
-
-  rules_t game_rules; // regras do jogo
-
-  double elapsed_time;
-
-  int sd; //socket descriptor associado a este jogador
-  struct sockaddr_un player_addr; //address do cliente
-  socklen_t addr_len; //comprimento do address
+  game_state_t game_state;                  // estado do jogo = {ONGOING,PLAYER_WIN,PLAYER_LOST}
+  rules_t game_rules;                       // regras do jogo
+  double elapsed_time;                      // tempo de jogo que já passou
+  int sd;                                   //socket descriptor associado a este jogador
+  struct sockaddr_un player_addr;           //address do cliente
+  socklen_t addr_len;                       //comprimento do address
 
 } game_t;
 
-typedef struct
+typedef struct  //estrutura para enviar comandos e seus argumentos
 {
   commands_t command;
 
@@ -131,7 +128,7 @@ typedef struct
 
 } coms_t;
 
-typedef struct
+typedef struct  //informação sobre cliente a enviar para criar um novo jogo
 {
   int sd;
   int game_number;
@@ -140,7 +137,7 @@ typedef struct
 
 } new_game_info;
 
-typedef struct 
+typedef struct  //tabelas de classificação
 {
   rjg_t tb[10];
   int tb_n_games;
