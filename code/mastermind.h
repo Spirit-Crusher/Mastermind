@@ -86,11 +86,11 @@ typedef struct
 typedef struct
 {
   int maxj; // número máximo de jogadas
-  int maxt; // tempo máximo de jogo (em minutos) //! por em segundos??
+  int maxt; // tempo máximo de jogo (em minutos)
 
 } rules_t;
 
-typedef struct // variável de estado do jogo
+typedef struct // variável que guarda o jogo
 {
   char correct_sequence[MAX_SEQUENCE_SIZE]; // sequência correta definida no início do jogo
   rjg_t log;                                // log do jogo para ser enviado depois ser armazenado
@@ -98,9 +98,9 @@ typedef struct // variável de estado do jogo
   char player_move[MAX_SEQUENCE_SIZE];      // sequência enviada pelo utilizador
   unsigned short int np;                    // número de letras certas no sítio certo
   unsigned short int nb;                    // número de letras certas no sítio errado<
-  game_state_t game_state; // estado do jogo = {ONGOING,PLAYER_WIN,PLAYER_LOST} //! isto é usado?
+  game_state_t game_state; // estado do jogo = {ONGOING,PLAYER_WIN,PLAYER_LOST}
 
-  rules_t game_rules; // regras do jogo //! novo
+  rules_t game_rules; // regras do jogo
 
   double elapsed_time;
 

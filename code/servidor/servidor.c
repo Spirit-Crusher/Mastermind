@@ -338,6 +338,7 @@ void* thread_func_gameinstance(void* game_info)
     create_new_game(current_game, socket, buffer_stream);
     printf("{SERVER} [INFO] Jogo nº%d foi iniciado\n", game_number);
 
+    //definir timeouts
     struct timeval timeout = {.tv_sec = 3, .tv_usec = 0};
     setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
