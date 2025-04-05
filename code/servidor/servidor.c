@@ -348,7 +348,6 @@ void* thread_func_gameinstance(void* game_info)
         {
             //ler jogadas do jogador e processar as mesmas enquanto o jogo estiver a decorrer
             bytes = read(socket, &buffer_stream, sizeof(buffer_stream));
-            printf("{SERVER} [INFO] Bytes: %d\n", bytes);
             if (bytes <= 0 && errno != EWOULDBLOCK)
             {
                 //jogador disconectou-se
