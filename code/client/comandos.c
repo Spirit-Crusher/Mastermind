@@ -17,7 +17,7 @@ extern DATAGRAM datsock;
 | Function: cmd_cnj - criar novo jogo
 +--------------------------------------------------------------------------*/
 void cmd_cnj(int argc, char** argv){
-  char buf_s[MAX_RCV_SIZE];                                                   // mensagem a receber
+  char buf_s[MAX_BUFFER_SIZE];                                                   // mensagem a receber
   coms_t coms_msg;                                                            // comandos a enviar 
   short int bytes;                                                            // variável auxiliar para timeouts
 
@@ -180,7 +180,7 @@ void cmd_jg(int argc, char** argv){
 void cmd_clm(int argc, char** argv){
   coms_t cmd_msg;                                                             // comandos a enviar 
   short int bytes;                                                            // variável auxiliar para timeouts
-  char requested_info[MAX_RCV_SIZE];                                          // mensagem a receber
+  char requested_info[MAX_BUFFER_SIZE];                                          // mensagem a receber
   
   (void) *argv;                                                               // remover aviso de unused variable na compilação
   
@@ -225,7 +225,7 @@ void cmd_clm(int argc, char** argv){
 void cmd_mlm(int argc, char** argv){
   coms_t cmd_msg;                                                             // comandos a enviar 
   short int bytes;                                                            // variável auxiliar para timeouts
-  char mlm_msg[MAX_RCV_SIZE];                                                 // mensagem a receber
+  char mlm_msg[MAX_BUFFER_SIZE];                                                 // mensagem a receber
 
   if(argc == 3){                                                              // #argumentos correto
     // definir o destinatário como o JMMserv
@@ -269,7 +269,7 @@ void cmd_mlm(int argc, char** argv){
 | Function: cmd_cer - consultar estado de envio para o JMMlog
 +--------------------------------------------------------------------------*/
 void cmd_cer(int argc, char** argv){
-  char cer_msg[MAX_RCV_SIZE];                                                 // mensagem a receber
+  char cer_msg[MAX_BUFFER_SIZE];                                                 // mensagem a receber
   coms_t cmd_msg;                                                             // comandos a enviar 
   short int bytes;                                                            // variável auxiliar para timeouts
 
@@ -316,7 +316,7 @@ void cmd_cer(int argc, char** argv){
 void cmd_aer(int argc, char** argv){
   coms_t cmd_msg;                                                             // comandos a enviar   
   short int bytes;                                                            // variável auxiliar para timeouts
-  char aer_msg[MAX_RCV_SIZE];                                                 // mensagem a receber
+  char aer_msg[MAX_BUFFER_SIZE];                                                 // mensagem a receber
 
   (void) *argv;                                                               // remover aviso de unused variable na compilação
 
@@ -360,7 +360,7 @@ void cmd_aer(int argc, char** argv){
 +--------------------------------------------------------------------------*/
 void cmd_der(int argc, char** argv){
   coms_t cmd_msg;                                                             // comandos a enviar 
-  char der_msg[MAX_RCV_SIZE];                                                 // mensagem a receber
+  char der_msg[MAX_BUFFER_SIZE];                                                 // mensagem a receber
   short int bytes;                                                            // variável auxiliar para timeouts
 
   (void) *argv;                                                               // remover aviso de unused variable na compilação
@@ -404,7 +404,7 @@ void cmd_der(int argc, char** argv){
 | Function: cmd_tmm - terminar processo mastermind, matar servidor
 +--------------------------------------------------------------------------*/
 void cmd_tmm(int argc, char** argv){
-  char tmm_msg[MAX_RCV_SIZE];                                                 // mensagem a receber
+  char tmm_msg[MAX_BUFFER_SIZE];                                                 // mensagem a receber
   coms_t cmd_msg = { .command = TMM };                                        // comando para o JMMserv
   short int bytes;                                                            // variável auxiliar para timeouts
 
@@ -534,7 +534,7 @@ void cmd_ltc(int argc, char** argv) {
 | Function: cmd_rtc - reiniciar tabelas de classificação
 +--------------------------------------------------------------------------*/
 void cmd_rtc(int argc, char** argv){
-  char rtc_msg[MAX_RCV_SIZE];                                                 // mensagem a receber
+  char rtc_msg[MAX_BUFFER_SIZE];                                                 // mensagem a receber
   short int bytes;                                                            // variável auxiliar para timeouts
 
   if((argc == 2) && (atoi(argv[1]) >= 0) && (atoi(argv[1]) <= 2)){            // dificuldade e #argumentos válidos
@@ -574,7 +574,7 @@ void cmd_rtc(int argc, char** argv){
 | Function: cmd_trh - terminar processo de registo histórico
 +--------------------------------------------------------------------------*/
 void cmd_trh(int argc, char** argv){
-  char trh_msg[MAX_RCV_SIZE];                                                 // mensagem a receber
+  char trh_msg[MAX_BUFFER_SIZE];                                                 // mensagem a receber
   coms_t cmd_msg = { .command = TRH};                                         // comando para o JMMlog
   short int bytes;                                                            // variável auxiliar para timeouts
 

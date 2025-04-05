@@ -195,7 +195,7 @@ void stream_handler(int socket, game_t* game, coms_t buffer_stream)
 
 void datagram_handler(int sd, struct sockaddr_un client_addr, socklen_t client_addrlen, coms_t buffer_dgram)
 {
-    char buffer_send[100]; //buffer para mensagem de resposta
+    char buffer_send[MAX_BUFFER_SIZE]; //buffer para mensagem de resposta
     switch (buffer_dgram.command)
     {
         case CLM:
@@ -317,7 +317,7 @@ void* thread_func_gameinstance(void* game_info)
     coms_t buffer_stream = info.buffer_s;
     int game_number = info.game_number;
     int socket = info.sd;
-    char result[100];
+    char result[MAX_BUFFER_SIZE];
     int bytes;
 
     printf("{SERVER} [INFO] Esta é a socket e o game number do novo jogador: %d:%d\n", socket, game_number);
